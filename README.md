@@ -16,7 +16,7 @@ Open opens a text buffer in an editor with the contents of the file specified. T
 use std::path::Path;
 
 fn main() {
-    let path = Path::new("list_of_dogs_I_want_to_pet.txt");
+    let path = Path::new("hello.txt");
     let output = match scrawl::open(path) {
         Ok(s) => s,
         Err(e) => e.to_string()
@@ -34,7 +34,7 @@ Open opens a text buffer in an editor with the contents of the file specified. T
 use std::path::Path;
 
 fn main() {
-    let path = Path::new("list_of_dogs_I_want_to_pet.txt");
+    let path = Path::new("hello.txt");
     let output = match scrawl::open(path) {
          Ok(s) => s,
          Err(e) => e.to_string()
@@ -52,7 +52,7 @@ Edit opens a text buffer in an editor with the contents of the file specified. T
 use std::path::Path;
 
 fn main() {
-    let path = Path::new("list_of_dogs_I_want_to_pet.txt");
+    let path = Path::new("hello.txt");
     let output = match scrawl::edit(path) {
          Ok(s) => s,
          Err(e) => e.to_string()
