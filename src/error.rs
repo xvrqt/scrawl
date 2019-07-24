@@ -1,12 +1,21 @@
+//! # Scrawl Error Types
+//! Error enum used by the Scrawl crate. 
 use std::fmt;
 
+/// Error enum for the Scrawl crate
 #[derive(Debug)]
 pub enum ScrawlError {
+    /// Could not determine the user's preferred editor. This usually means the $EDITOR environmental variable is not set.
     EditorNotFound,
+    /// Could not create a new temporary file to use as a buffer for Scrawl.
     FailedToCreateTempfile,
+    /// Could not open the editor, or the editor quit with an error.
     FailedToOpenEditor(String),
+    /// Could not read the the file into a valid UTF-8 String.
     FailedToReadIntoString,
+    /// Could not open the file specified in the scrawl::open function.
     FailedToCopyToTempFile(String),
+    /// Convenienve type. Contains the msg() from other types of errors.
     Other(String)
 }
 

@@ -14,7 +14,7 @@ use std::{
     process::Command
 };
 
-mod error;
+pub mod error;
 use error::ScrawlError as ScrawlError;
 
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
