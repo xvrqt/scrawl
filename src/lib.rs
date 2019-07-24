@@ -11,7 +11,7 @@ use std::{
     env::{temp_dir, var},
     path::{Path, PathBuf},
     sync::atomic::{AtomicUsize, Ordering},
-    process::Command,
+    process::Command
 };
 
 mod error;
@@ -95,12 +95,13 @@ fn get_editor_name() -> Result<String, ScrawlError> {
 }
 
 /* Creates the temporary file */
-const PREFIX: &str = "xvrqt_ddde8065236923d03e612f6fb00ee3eb31ef8c30";
+const PREFIX: &str = "xvrqt_scrawl";
 static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 fn create_temp_file() -> Result<PathBuf, ScrawlError> {
     /* Generate unique path to a temporary file buffer */
     let i = TEMP_FILE_COUNT.fetch_add(1, Ordering::SeqCst);
-    let temp_file = format!("{}_{}", PREFIX, i);
+    let process_id = std::process::id();
+    let temp_file = format!("{}_{}_{}", PREFIX, process_id, i);
 
     let mut temp_dir = temp_dir();
     temp_dir.push(temp_file);
