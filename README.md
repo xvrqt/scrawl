@@ -5,9 +5,12 @@ Rust library that opens a user's text editor and returns the results as a string
 Built for my new (under development) daily journaling program in Rust: [Echo](https://git.xvrqt.com/xvrqt/echo)
 
 ## Functions
+For all of these functions the user must have their $EDITOR environmental variable set (or you'll get an error telling you it is not set).
 
 ### New
 Open opens a text buffer in an editor with the contents of the file specified. This does _not_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
+
+![Animated example of how to use the new command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/new.gif)
 
 ```rust
 use std::path::Path;
@@ -25,6 +28,8 @@ fn main() {
 ### Open
 Open opens a text buffer in an editor with the contents of the file specified. This does _not_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
 
+![Animated example of how to use the open command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/open.gif)
+
 ```rust
 use std::path::Path;
 
@@ -40,6 +45,8 @@ fn main() {
 
 ### Edit
 Edit opens a text buffer in an editor with the contents of the file specified. This _does_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
+
+![Animated example of how to use the edit command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/edit.gif)
 
 ```rust
 use std::path::Path;
