@@ -31,7 +31,10 @@ use error::ScrawlError as ScrawlError;
 /// ```
 pub fn new() -> Result<String, ScrawlError> {
     let temp_file = create_temp_file()?;
-    open_editor(&temp_file)
+    open_editor(&temp_file).and_then(|output| {
+        let _ = fs::remove_file(temp_file);
+        Ok(output)
+    })
 }
 
 /// Open opens a text buffer in an editor with the contents of the file specified. This does _not_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
@@ -41,7 +44,7 @@ pub fn new() -> Result<String, ScrawlError> {
 /// use std::path::Path;
 /// 
 /// fn main() {
-///     let path = Path::new("list_of_dogs_I_want_to_pet.txt");
+///     let path = Path::new("hello.txt");
 ///     let output = match scrawl::open(path) {
 ///          Ok(s) => s,
 ///          Err(e) => e.to_string()
@@ -58,7 +61,10 @@ pub fn open(p: &Path) -> Result<String, ScrawlError> {
         ScrawlError::FailedToCopyToTempFile(String::from(p))
     })?;
     
-    open_editor(&temp_file)
+    open_editor(&temp_file).and_then(|output| {
+        let _ = fs::remove_file(temp_file);
+        Ok(output)
+    })
 }
 
 /// Edit opens a text buffer in an editor with the contents of the file specified. This _does_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
@@ -68,7 +74,7 @@ pub fn open(p: &Path) -> Result<String, ScrawlError> {
 /// use std::path::Path;
 /// 
 /// fn main() {
-///     let path = Path::new("list_of_dogs_I_want_to_pet.txt");
+///     let path = Path::new("hello.txt");
 ///     let output = match scrawl::edit(path) {
 ///          Ok(s) => s,
 ///          Err(e) => e.to_string()
