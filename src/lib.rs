@@ -1,3 +1,11 @@
+//! # Scrawl 
+//! A library for opening a file for editing in a text editor and capturing the result as a String
+#![deny(missing_docs,
+        missing_debug_implementations, missing_copy_implementations,
+        trivial_casts, trivial_numeric_casts,
+        unstable_features, unsafe_code,
+        unused_import_braces, unused_qualifications)]
+
 use std::{
     fs,
     env::{temp_dir, var},
@@ -9,18 +17,38 @@ use std::{
 mod error;
 use error::ScrawlError as ScrawlError;
 
-/* New opens an empty text buffer in an editor and returns a Result<String> with
-   the contents.
-*/
+/// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
+///
+/// # Example
+/// ```no_run
+/// fn main() {
+///     let output = match scrawl::new() {
+///          Ok(s) => s,
+///          Err(e) => e.to_string()
+///    };
+///    println!("{}", output);
+/// }
+/// ```
 pub fn new() -> Result<String, ScrawlError> {
     let temp_file = create_temp_file()?;
     open_editor(&temp_file)
 }
 
-/* Open opens a text buffer in an editor with the contents of the file 
-   specified. This does _not_ edit the contents of the file. Returns a 
-   Result<String> with the contents of the buffer.
-*/
+/// Open opens a text buffer in an editor with the contents of the file specified. This does _not_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
+///
+/// # Example
+/// ```no_run
+/// use std::path::Path;
+/// 
+/// fn main() {
+///     let path = Path::new("list_of_dogs_I_want_to_pet.txt");
+///     let output = match scrawl::open(path) {
+///          Ok(s) => s,
+///          Err(e) => e.to_string()
+///    };
+///    println!("{}", output);
+/// }
+/// ```
 pub fn open(p: &Path) -> Result<String, ScrawlError> {
     let temp_file = create_temp_file()?;
 
@@ -33,10 +61,21 @@ pub fn open(p: &Path) -> Result<String, ScrawlError> {
     open_editor(&temp_file)
 }
 
-/* Edit opens a text buffer in an editor with the contents of the file 
-   specified. This _does_ edit the contents of the file. Returns a
-   Result<String> with the contents of the buffer.
-*/
+/// Edit opens a text buffer in an editor with the contents of the file specified. This _does_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
+///
+/// # Example
+/// ```no_run
+/// use std::path::Path;
+/// 
+/// fn main() {
+///     let path = Path::new("list_of_dogs_I_want_to_pet.txt");
+///     let output = match scrawl::edit(path) {
+///          Ok(s) => s,
+///          Err(e) => e.to_string()
+///    };
+///    println!("{}", output);
+/// }
+/// ```
 pub fn edit(p: &Path) -> Result<String, ScrawlError> {
     open_editor(p)
 }
@@ -61,7 +100,7 @@ fn create_temp_file() -> Result<PathBuf, ScrawlError> {
     temp_dir.push(temp_file);
 
     match fs::File::create(&temp_dir) {
-        Err(_) => return Err(ScrawlError::FailedToCreateTempfile),
+        Err(_) => Err(ScrawlError::FailedToCreateTempfile),
         _ => Ok(temp_dir)
     }
 }
