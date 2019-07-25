@@ -13,7 +13,7 @@ Open an empty text buffer in the user's preferred editor. Returns a Result<Strin
 ![Animated example of how to use the new command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/new.gif)
 
 ```rust
-use std::path::Path;
+use scrawl;
 
 fn main() {
     let output = match scrawl::new(path) {
@@ -27,10 +27,10 @@ fn main() {
 ### With
 Open an text buffer with the contents of the String slice in the user's preferred editor. Returns a Result<String> with the contents of the buffer.
 
-![Animated example of how to use the with command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/new.gif)
+![Animated example of how to use the with command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/with.gif)
 
 ```rust
-use std::path::Path;
+use scrawl;
 
 fn main() {
     let output = match scrawl::with("Hello World!") {
@@ -47,6 +47,7 @@ Open opens a text buffer in an editor with the contents of the file specified. T
 ![Animated example of how to use the open command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/open.gif)
 
 ```rust
+use scrawl;
 use std::path::Path;
 
 fn main() {
@@ -65,6 +66,7 @@ Edit opens a text buffer in an editor with the contents of the file specified. T
 ![Animated example of how to use the edit command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/edit.gif)
 
 ```rust
+use scrawl;
 use std::path::Path;
 
 fn main() {
