@@ -37,6 +37,31 @@ pub fn new() -> Result<String, ScrawlError> {
     })
 }
 
+/// New opens an text buffer with the contents of the provided String in an editor. Returns a Result<String> with the edited contents.
+///
+/// # Example
+/// ```no_run
+/// fn main() {
+///     let output = match scrawl::with("Hello World!") {
+///          Ok(s) => s,
+///          Err(e) => e.to_string()
+///    };
+///    println!("{}", output);
+/// }
+/// ```
+pub fn with(content: &str) -> Result<String, ScrawlError> {
+    let temp_file = create_temp_file()?;
+
+    fs::write(&temp_file, content).map_err(|_| {
+        ScrawlError::FailedToCreateTempfile
+    })?;
+
+    open_editor(&temp_file).and_then(|output| {
+        let _ = fs::remove_file(temp_file);
+        Ok(output)
+    })
+}
+
 /// Open opens a text buffer in an editor with the contents of the file specified. This does _not_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
 ///
 /// # Example
