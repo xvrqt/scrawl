@@ -6,6 +6,7 @@
         unstable_features, unsafe_code,
         unused_import_braces, unused_qualifications)]
 
+/* Standard Library */
 use std::{
     fs,
     env::{temp_dir, var},
@@ -14,8 +15,27 @@ use std::{
     process::Command
 };
 
+/* Internal Modules */
 pub mod error;
 use error::ScrawlError as ScrawlError;
+
+/// The Editor struct allows setting up the editor before opening it. Useful for setting things like a file extension for syntax highlighting, or specifying a specific editor and more.
+#[derive(Debug)]
+pub struct Editor<'a> {
+    /// The name of the command to use instead of $EDITOR
+    bin: &'a str,
+    /// The name of the command to use if $EDITOR is not set
+    fallback: &'a str,
+    /// The extension to set on the file used a temporary buffer. Useful for having the correct syntax highlighting when the editor is opened.
+    extension: &'a str,
+
+    /// Trim the white space off the resulting string.
+    trim: bool,
+    /// If true, it will capture the information from the editor when it closes, even the unsaved changes.
+    require_save: bool,
+}
+
+
 
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
 ///

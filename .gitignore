@@ -6,3 +6,6 @@ Cargo.lock
 # MacOS Cruft
 .DS_Store
 
+# Vim Cruft
+*.swp
+
