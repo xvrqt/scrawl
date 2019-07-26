@@ -21,21 +21,98 @@ use error::ScrawlError as ScrawlError;
 
 /// The Editor struct allows setting up the editor before opening it. Useful for setting things like a file extension for syntax highlighting, or specifying a specific editor and more.
 #[derive(Debug)]
-pub struct Editor<'a> {
+pub struct Editor {
     /// The name of the command to use instead of $EDITOR
-    bin: &'a str,
+    bin: Option<String>,
     /// The name of the command to use if $EDITOR is not set
-    fallback: &'a str,
+    fallback: Option<String>,
+    /// Use the contents of specified file to seed the buffer.
+    file: Option<PathBuf>,
+    /// Use the contents of this String slice to seed the buffer.
+    contents: Option<String>,
     /// The extension to set on the file used a temporary buffer. Useful for having the correct syntax highlighting when the editor is opened.
-    extension: &'a str,
+    extension: Option<String>,
 
-    /// Trim the white space off the resulting string.
+    /// Trim the white space off the resulting string. True by default.
     trim: bool,
-    /// If true, it will capture the information from the editor when it closes, even the unsaved changes.
-    require_save: bool,
 }
 
+impl Editor {
+    /// Returns a new Editor struct with Trim Newlines and Require Save enabled. 
+    pub fn new() -> Self {
+        Editor {
+            bin: None,
+            fallback: None,
 
+            file: None,
+            contents: None,
+            extension: None,
+
+            trim: true,
+        }
+    }
+
+    /// Sets the name of the editor to open the text buffer. If this editor is not found it will not fallback on the user's default and return an error instead.
+    /// # Example
+    /// ```no_run
+    /// fn main() {
+    ///     let output = match scrawl::Editor.new()
+    ///                                .executable("vim")
+    ///                                .edit() 
+    ///     {
+    ///          Ok(s) => s,
+    ///          Err(e) => e.to_string()
+    ///     };
+    ///     println!("{}", output);
+    /// }
+    /// ```
+    pub fn executable(&mut self, command: &str) -> &mut Editor {
+        self.bin = Some(command.to_string());        
+        self
+    }
+
+    /// Sets the name of the editor to be used to open the text buffer if the user has not set a default text editor. Scrawl will attempt to discern the default text editor using $VISUAL and $EDITOR environmental variables in that order. If they are not present, it will set it "textpad.exe" for Windows and "vi" otherwise. Setting fallback will cause it to use the specified instead of the previous two.
+    ///
+    pub fn fallback(&mut self, command: &str) -> &mut Editor {
+        self.fallback = Some(command.to_string());        
+        self
+    }
+
+    /// Fills the text buffer with the contents of the file specified. This does _not_ edit the contents of the file. 
+    pub fn file(&mut self, file: &Path) -> &mut Editor {
+        self.file = Some(file.to_owned());        
+        self
+    }
+
+    /// Fills the text buffer with the contents of the specified string. If both file and contents are set contents will take priority. 
+    pub fn contents(&mut self, contents: &str) -> &mut Editor {
+        self.contents = Some(contents.to_owned());        
+        self
+    }
+
+    /// Sets whether or not to trim the resulting String of newlines
+    pub fn trim(&mut self, trim: bool) -> &mut Editor {
+        self.trim = trim;
+        self
+    }
+
+}
+
+/// Creates a new Editor struct. Used to indicate you're not saving the struct for resuse.
+/// # Example
+/// ```no_run
+/// fn main() {
+///     let output = match scrawl::builder()
+///                                .executable("vim") {
+///          Ok(s) => s,
+///          Err(e) => e.to_string()
+///    };
+///    println!("{}", output);
+/// }
+/// ```
+pub fn builder() -> Editor {
+    Editor::new()
+}
 
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
 ///
