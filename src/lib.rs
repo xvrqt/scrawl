@@ -43,6 +43,13 @@ pub struct Editor {
 
 impl Editor {
     /// Returns a new Editor struct with Trim Newlines and Require Save enabled. 
+    /// # Example
+    /// ```no_run
+    /// fn main() {
+    ///     let output = scrawl::Editor::new().edit();
+    ///     println!("{}", output.unwrap());
+    /// }
+    /// ```
     pub fn new() -> Self {
         Editor {
             editor: None,
@@ -62,14 +69,10 @@ impl Editor {
     /// # Example
     /// ```no_run
     /// fn main() {
-    ///     let output = match scrawl::Editor.new()
-    ///                                .executable("vim")
-    ///                                .edit() 
-    ///     {
-    ///          Ok(s) => s,
-    ///          Err(e) => e.to_string()
-    ///     };
-    ///     println!("{}", output);
+    ///     let output = scrawl::Editor::new()
+    ///                                  .editor("vim")
+    ///                                  .edit();
+    ///     println!("{}", output.unwrap());
     /// }
     /// ```
     pub fn editor(&mut self, command: &str) -> &mut Editor {
@@ -78,30 +81,76 @@ impl Editor {
     }
 
     /// Seeds the text buffer with the contents of the specified file. This does **not** edit the contents of the file unless 'edit_directly(true)' is set.
-    pub fn file(&mut self, file: &Path) -> &mut Editor {
-        self.file = Some(file.to_owned());        
+    /// # Example
+    /// ```no_run
+    /// fn main() {
+    ///     let output = scrawl::Editor::new()
+    ///                                  .file("hello.txt")
+    ///                                  .edit();
+    ///     println!("{}", output.unwrap());
+    /// }
+    /// ```
+    pub fn file<S: AsRef<Path>>(&mut self, file: S) -> &mut Editor {
+        let path: &Path = file.as_ref().into();
+        self.file = Some(path.to_owned());        
         self
     }
 
     /// Fills the text buffer with the contents of the specified string. If both 'file' and 'contents' are set, contents will take priority. 
+    /// # Example
+    /// ```no_run
+    /// fn main() {
+    ///     let output = scrawl::Editor::new()
+    ///                                  .contents("Tell me your best memory:\n")
+    ///                                  .edit();
+    ///     println!("{}", output.unwrap());
+    /// }
+    /// ```
     pub fn contents(&mut self, contents: &str) -> &mut Editor {
         self.content = Some(contents.to_owned());        
         self
     }
 
     /// Sets the extension of the temporary file used as a buffer. Useful for hinting to the editor which syntax highlighting to use.
+    /// # Example
+    /// ```no_run
+    /// fn main() {
+    ///     let output = scrawl::Editor::new()
+    ///                                  .extension(".rs")
+    ///                                  .edit();
+    ///     println!("{}", output.unwrap());
+    /// }
+    /// ```
     pub fn extension(&mut self, ext: &str) -> &mut Editor {
         self.extension = Some(ext.to_owned());
         self
     }
 
     /// Sets whether or not to trim the resulting String of whitespace
+    /// # Example
+    /// ```no_run
+    /// fn main() {
+    ///     let output = scrawl::Editor::new()
+    ///                                  .trim(false)
+    ///                                  .edit();
+    ///     println!("{}", output.unwrap());
+    /// }
+    /// ```
     pub fn trim(&mut self, b: bool) -> &mut Editor {
         self.trim = b;
         self
     }
 
     /// Sets whether or not to save changes to the file specified in 'file'.
+    /// # Example
+    /// ```no_run
+    /// fn main() {
+    ///     let output = scrawl::Editor::new()
+    ///                                   .edit_directly(true)
+    ///                                   .edit();
+    ///     println!("{}", output.unwrap());
+    /// }
+    /// ```
     pub fn edit_directly(&mut self, b: bool) -> &mut Editor {
         self.edit_directly = b;
         self
@@ -134,7 +183,9 @@ impl Editor {
         if let Some(ref editor) = self.editor { return editor.to_owned() }
 
         /* Check env vars for a default editor */
-        if let Ok(editor) = var("VISUAL").or(var("EDITOR")) { return editor }
+        if let Ok(editor) = var("VISUAL").or_else(|_| var("EDITOR")) { 
+            return editor 
+        }
         
         /* Take a guess based on the system */
         if cfg!(windows) {
@@ -189,8 +240,16 @@ impl Editor {
         Ok(temp_dir)
     }
 
-
     /// Opens a text editor with the settings in the struct. Returns a Result with the String upon success.
+    /// # Example
+    /// ```no_run
+    /// fn main() {
+    ///     let output = scrawl::Editor::new()
+    ///                                  .file("hello.txt")
+    ///                                  .edit();
+    ///     println!("{}", output.unwrap());
+    /// }
+    /// ```
     pub fn edit(&self) -> Result<String, ScrawlError> {
         let mut output = self.open_editor()?;
 
@@ -200,24 +259,6 @@ impl Editor {
 
         Ok(output)
     }
-}
-
-/* Builder */
-
-/// Creates a new Editor struct. Used to indicate you're not saving the struct for resuse.
-/// # Example
-/// ```no_run
-/// fn main() {
-///     let output = match scrawl::builder()
-///                                .editor("vim") {
-///          Ok(s) => s,
-///          Err(e) => e.to_string()
-///    };
-///    println!("{}", output);
-/// }
-/// ```
-pub fn builder() -> Editor {
-    Editor::new()
 }
 
 /* Convenience functions */
@@ -235,7 +276,7 @@ pub fn builder() -> Editor {
 /// }
 /// ```
 pub fn new() -> Result<String, ScrawlError> {
-    builder().edit()
+    Editor::new().edit()
 }
 
 /// New opens an text buffer with the contents of the provided String in an editor. Returns a Result<String> with the edited contents.
@@ -251,7 +292,7 @@ pub fn new() -> Result<String, ScrawlError> {
 /// }
 /// ```
 pub fn with(content: &str) -> Result<String, ScrawlError> {
-    builder().contents(content).edit()
+    Editor::new().contents(content).edit()
 }
 
 /// Open opens a text buffer in an editor with the contents of the file specified. This does **not** edit the contents of the file. Returns a Result<String> with the contents of the buffer.
@@ -270,7 +311,7 @@ pub fn with(content: &str) -> Result<String, ScrawlError> {
 /// }
 /// ```
 pub fn open(p: &Path) -> Result<String, ScrawlError> {
-    builder().file(p).edit()
+    Editor::new().file(p).edit()
 }
 
 /// Edit opens a text buffer in an editor with the contents of the file specified. This **does** edit the contents of the file. Returns a Result<String> with the contents of the buffer.
@@ -289,6 +330,6 @@ pub fn open(p: &Path) -> Result<String, ScrawlError> {
 /// }
 /// ```
 pub fn edit(p: &Path) -> Result<String, ScrawlError> {
-    builder().file(p).edit_directly(true).edit()
+    Editor::new().file(p).edit_directly(true).edit()
 }
 

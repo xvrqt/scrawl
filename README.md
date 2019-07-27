@@ -4,6 +4,70 @@ Rust library that opens a user's text editor and returns the results as a string
 
 Built for my new (under development) daily journaling program in Rust: [Echo](https://git.xvrqt.com/xvrqt/echo)
 
+## Editor Struct
+The Editor struct allows you to set certain options before opening the editor. It also allows you resuse these settings instead of having to build them each time you want to use an editor. Run `edit()` on the struct to open the buffer.
+
+```rust
+use scrawl::Editor;
+
+fn main() {
+    let editor = Editor::new()
+                        .contents("My favorite color is: ")
+                        .extension(".txt")
+                        .trim(true);
+
+    let fave_color = editor.edit().unwrap();
+
+    /* Change the prompt, keep other settings the same */
+    editor.contents("My favorite bird is: ");
+    let fave_bird = editor.edit().unwrap();
+
+    println!("About Me:\n{}\n{}", fave_color, fave_bird);
+}
+```
+
+If you want to open a one off editor with settings, see the **Builder** section below.
+
+If you want to open a one off editor without using settings, see the **Functions** section below.
+
+### Settings
+
+#### Editor
+You can set a preferred text editor for the user. Otherwise, $VISUAL, $EDITOR or "textpad.exe" or "vi" is used as a fallback if none is set.
+```rust
+let output = Editor::new().editor("vim").edit()?;
+```
+
+#### File
+You can set a file from which the text buffer will be seeded. This will not modify the file.
+```rust
+let output = Editor::new().file("my_survey.txt").edit()?;
+```
+
+#### Contents 
+You can use a string to seed the text buffer.
+```rust
+let output = Editor::new().contents("Favorite Number: ").edit()?;
+```
+
+#### Extension 
+Set the extension of the temporary file created as a buffer. Useful for hinting to text editors which syntax highlighting to use.
+```rust
+let output = Editor::new().extension(".rs").edit()?;
+```
+
+#### Trim 
+Trim leading and trailing whitespace from the result. Enabled by default.
+```rust
+let output = Editor::new().trim(false).edit()?;
+```
+
+#### Edit Directly
+If file is set, this will open that file for editing (instead of a temporary file) and any changes made will be reflected to that file. Disabled by default.
+```rust
+let output = Editor::new().file("lib.rs").edit_directly(true).edit()?;
+```
+
 ## Functions
 For all of these functions the user must have their $EDITOR environmental variable set (or you'll get an error telling you it is not set).
 
