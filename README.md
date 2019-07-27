@@ -10,7 +10,7 @@ Built for my new (under development) daily journaling program in Rust: [Echo](ht
 The Editor struct allows you to set certain options before opening the editor. It also allows you resuse these settings instead of having to build them each time you want to use an editor. Run `edit()` on the struct to open the buffer.
 
 ```rust
-use scrawl::Editor;
+use scrawl::editor::Editor;
 
 fn main() {
     let editor = Editor::new()
