@@ -24,7 +24,7 @@ const PREFIX: &str = "xvrqt_scrawl";
 static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 /// The Editor struct allows setting up the editor before opening it. Useful for setting things like a file extension for syntax highlighting, or specifying a specific editor and more.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Editor {
     /// The name of the command to use instead of $EDITOR, fallsback to the user's default editor
     editor: Option<String>,
@@ -91,7 +91,7 @@ impl Editor {
     /// }
     /// ```
     pub fn file<S: AsRef<Path>>(&mut self, file: S) -> &mut Editor {
-        let path: &Path = file.as_ref().into();
+        let path: &Path = file.as_ref();
 
         /* Set the extension */
         if let Some(ext) = path.extension() {
@@ -178,7 +178,7 @@ impl Editor {
             .status() { 
                 Ok(status) if status.success() => {
                     fs::read_to_string(path).map_err(|_| {
-                        ScrawlError::FailedToReadIntoString
+                        ScrawlError::FailedToCaptureInput
                     })
                 },
                 _ => Err(ScrawlError::FailedToOpenEditor(editor_name))
