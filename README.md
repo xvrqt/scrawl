@@ -39,7 +39,7 @@ let output = Editor::new().editor("vim").edit()?;
 ```
 
 #### File
-You can set a file from which the text buffer will be seeded. This will not modify the file.
+You can set a file from which the text buffer will be seeded. If the file has an extension, this will also set the extension of the temporary buffer. This will _**not**_ modify the file.
 ```rust
 let output = Editor::new().file("my_survey.txt").edit()?;
 ```

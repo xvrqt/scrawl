@@ -80,7 +80,7 @@ impl Editor {
         self
     }
 
-    /// Seeds the text buffer with the contents of the specified file. This does **not** edit the contents of the file unless 'edit_directly(true)' is set.
+    /// Seeds the text buffer with the contents of the specified file. This does **not** edit the contents of the file unless 'edit_directly(true)' is set. This will set the `extension` setting to the file's extension.
     /// # Example
     /// ```no_run
     /// fn main() {
@@ -92,6 +92,14 @@ impl Editor {
     /// ```
     pub fn file<S: AsRef<Path>>(&mut self, file: S) -> &mut Editor {
         let path: &Path = file.as_ref().into();
+
+        /* Set the extension */
+        if let Some(ext) = path.extension() {
+            if let Some(s) = ext.to_str() {
+                self.extension(s);
+            }
+        }
+        
         self.file = Some(path.to_owned());        
         self
     }
