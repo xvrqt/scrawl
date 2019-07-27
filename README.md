@@ -2,6 +2,8 @@
 
 Rust library that opens a user's text editor and returns the results as a string. Can be used to open and edit exisiting files, or just as a scratch space for input. Useful for having a user edit text inline with a CLI program a la `git commit -m`
 
+![Animated example of how to use the with command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/with.gif)
+
 Built for my new (under development) daily journaling program in Rust: [Echo](https://git.xvrqt.com/xvrqt/echo)
 
 ## Editor Struct
@@ -26,14 +28,12 @@ fn main() {
 }
 ```
 
-If you want to open a one off editor with settings, see the **Builder** section below.
-
 If you want to open a one off editor without using settings, see the **Functions** section below.
 
 ### Settings
 
 #### Editor
-You can set a preferred text editor for the user. Otherwise, $VISUAL, $EDITOR or "textpad.exe" or "vi" is used as a fallback if none is set.
+You can set a preferred text editor for the user. Otherwise, $VISUAL, $EDITOR or "textpad.exe"/"vi" is used as a fallback if none is set.
 ```rust
 let output = Editor::new().editor("vim").edit()?;
 ```
@@ -63,13 +63,13 @@ let output = Editor::new().trim(false).edit()?;
 ```
 
 #### Edit Directly
-If file is set, this will open that file for editing (instead of a temporary file) and any changes made will be reflected to that file. Disabled by default.
+If **file** is set, this will open that file for editing (instead of a temporary file) and any changes made will be reflected to that file. Disabled by default.
 ```rust
 let output = Editor::new().file("lib.rs").edit_directly(true).edit()?;
 ```
 
 ## Functions
-For all of these functions the user must have their $EDITOR environmental variable set (or you'll get an error telling you it is not set).
+These functions are provided for convenience. Useful for prototyping, or if you don't want to build and maintain a struct just to open an editor.
 
 ### New
 Open an empty text buffer in the user's preferred editor. Returns a Result<String> with the contents of the buffer.
@@ -106,7 +106,7 @@ fn main() {
 ```
 
 ### Open
-Open opens a text buffer in an editor with the contents of the file specified. This does _not_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
+Open opens a text buffer in an editor with the contents of the file specified. This does _**not**_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
 
 ![Animated example of how to use the open command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/open.gif)
 
@@ -125,7 +125,7 @@ fn main() {
 ```
 
 ### Edit
-Edit opens a text buffer in an editor with the contents of the file specified. This _does_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
+Edit opens a text buffer in an editor with the contents of the file specified. This _**does**_ edit the contents of the file. Returns a Result<String> with the contents of the buffer.
 
 ![Animated example of how to use the edit command](https://xvrqt.sfo2.digitaloceanspaces.com/image-cache/edit.gif)
 
