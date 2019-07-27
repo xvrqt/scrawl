@@ -1,6 +1,6 @@
 [package]
 name = "scrawl"
-version = "0.1.5"
+version = "0.9.0"
 authors = ["Amy <git@xvrqt.com>"]
 edition = "2018"
 
