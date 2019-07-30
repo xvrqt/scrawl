@@ -6,6 +6,29 @@ Rust library that opens a user's text editor and returns the results as a string
 
 Built for my new (under development) daily journaling program in Rust: [Echo](https://git.xvrqt.com/xvrqt/echo)
 
+## Quick Start
+```rust
+use scrawl;
+
+fn main() {
+    // Open an empty buffer with the user's preferred text editor
+    let output = scrawl::new()?;
+    println!("User Input: {}", output);
+
+    // Open a buffer with text from a string in the text editor
+    let output = scrawl::with("Favorite color: ")?;
+    println!("{}", output);
+
+    // Open a buffer with text from a file in the text editor
+    let output = scrawl::open("survey.txt")?;
+    println!("{}", output);
+
+    // Open a file for direct editing in the text editor
+    let output = scrawl::edit("README.md")?;
+    println!("{}", output);
+}
+```
+
 ## Editor Struct
 The Editor struct allows you to set certain options before opening the editor. It also allows you resuse these settings instead of having to build them each time you want to use an editor. Run `edit()` on the struct to open the buffer.
 
