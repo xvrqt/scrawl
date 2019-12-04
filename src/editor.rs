@@ -22,275 +22,195 @@ use crate::error::ScrawlError;
 const PREFIX: &str = "xvrqt_scrawl";
 static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-/// The Editor struct allows setting up the editor before opening it. Useful for setting things like a file extension for syntax highlighting, or specifying a specific editor and more.
-#[derive(Debug, Default)]
-pub struct Editor {
-    /// The name of the command to use instead of $EDITOR, fallback to the user's default editor
-    editor: Option<String>,
-    /// Use the contents of specified file to seed the buffer.
-    file: Option<PathBuf>,
-    /// Use the contents of this String slice to seed the buffer.
-    content: Option<String>,
-    /// The extension to set on the file used a temporary buffer. Useful for having the correct syntax highlighting when the editor is opened.
-    extension: Option<String>,
-
-    /// Trim the white space off the resulting string. True by default.
-    trim: bool,
-    /// If file is set this will enable the user to directly edit the file that is opened. If 'file' is not set then this flag is ignored. False by default.
-    edit_directly: bool,
+/// Returns a new Editor struct
+/// # Example
+/// ```no_run
+/// # use scrawl::error::ScrawlError;
+///
+/// # fn main() -> Result<(), ScrawlError> {
+///   let editor = scrawl::editor::new();
+///   let output = editor.open()?;
+///   println!("{}", output);
+/// #   Ok(())
+/// # }
+/// ```
+pub fn new() -> Editor<InitialState> {
+    Editor {
+        editor: get_default_editor_name(),
+        unique: InitialState {}
+    }
 }
 
-impl Editor {
-    /// Returns a new Editor struct with Trim Newlines and Require Save enabled.
+/* Marker trait that ensures valid state transitions */
+/// Marker trait used to ensure valid state transitions.
+pub trait EditorState {}
+
+/// The Editor struct allows setting up the editor before opening it. Useful for setting things like a file extension for syntax highlighting, or specifying a specific editor and more.
+#[derive(Debug)]
+pub struct Editor<S: EditorState> {
+    /// The name of the command to use instead of $EDITOR, fallback to the user's default editor
+    editor: String,
+    /// Captures the state of the Editor and holds additional state information.
+    unique: S,
+}
+
+/* The initial state of the Editor */
+#[derive(Debug, Clone, Copy)]
+/// State machine type marker. Initial state of the editor.
+pub struct InitialState {}
+impl EditorState for InitialState {}
+
+impl Editor<InitialState> {
+    /// Set the editor to open the buffer in. If not set, uses the user's default editor set by the $EDITOR environment variable.
+    pub fn editor<'a>(&'a mut self, editor_name: &str) -> &'a mut Self {
+        self.editor = editor_name.to_owned();
+        self
+    }
+
+    /// Open an empty buffer
     /// # Example
     /// ```no_run
-    /// # use scrawl::editor::Editor;
     /// # use scrawl::error::ScrawlError;
     ///
     /// # fn main() -> Result<(), ScrawlError> {
-    ///   let output = Editor::new().open()?;
+    ///   let editor = scrawl::editor::new();
+    ///   let output = editor.open()?;
     ///   println!("{}", output);
     /// #   Ok(())
     /// # }
     /// ```
-    pub fn new() -> Self {
+    pub fn open(&self) -> Result<String, ScrawlError> {
+        let path = create_temp_file()?;
+        open_editor(&self.editor, &path)
+    }
+        
+    /// Use the contents of this file to seed the text buffer.
+    pub fn file<F: AsRef<Path>>(self, file: F) -> Editor<FileState> {
         Editor {
-            editor: None,
-
-            file: None,
-            content: None,
-            extension: None,
-
-            trim: true,
-            edit_directly: false,
-        }
-    }
-
-    /* SETTERS */
-
-    /// Sets the name of the editor to open the text buffer. If this editor is not found it will not fallback on the user's default and return an error instead.
-    /// # Example
-    /// ```no_run
-    /// # use scrawl::editor::Editor;
-    /// # use scrawl::error::ScrawlError;
-    ///
-    /// # fn main() -> Result<(), ScrawlError> {
-    ///   let output = Editor::new()
-    ///                          .editor("vim")
-    ///                          .open()?;
-    ///   println!("{}", output);
-    /// #   Ok(())
-    /// # }
-    /// ```
-    pub fn editor(&mut self, command: &str) -> &mut Editor {
-        self.editor = Some(command.to_owned());
-        self
-    }
-
-    /// Seeds the text buffer with the contents of the specified file. This does **not** edit the contents of the file unless 'edit_directly(true)' is set. This will set the `extension` setting to the file's extension.
-    /// # Example
-    /// ```no_run
-    /// # use scrawl::editor::Editor;
-    /// # use scrawl::error::ScrawlError;
-    ///
-    /// # fn main() -> Result<(), ScrawlError> {
-    ///   let output = Editor::new()
-    ///                          .file("hello.txt")
-    ///                          .open()?;
-    ///   println!("{}", output);
-    /// #   Ok(())
-    /// # }
-    /// ```
-    pub fn file<S: AsRef<Path>>(&mut self, file: S) -> &mut Editor {
-        let path: &Path = file.as_ref();
-
-        /* Set the extension */
-        if let Some(ext) = path.extension() {
-            if let Some(s) = ext.to_str() {
-                self.extension(s);
+            editor: self.editor,
+            unique: FileState { 
+                path: file.as_ref().to_owned(),
             }
         }
-
-        self.file = Some(path.to_owned());
-        self
     }
 
-    /// Fills the text buffer with the contents of the specified string. If both 'file' and 'contents' are set, contents will take priority.
-    /// # Example
-    /// ```no_run
-    /// # use scrawl::editor::Editor;
-    /// # use scrawl::error::ScrawlError;
-    ///
-    /// # fn main() -> Result<(), ScrawlError> {
-    ///   let output = Editor::new()
-    ///                          .contents("Tell me your best memory:\n")
-    ///                          .open()?;
-    ///   println!("{}", output);
-    /// #   Ok(())
-    /// # }
-    /// ```
-    pub fn contents(&mut self, contents: &str) -> &mut Editor {
-        self.content = Some(contents.to_owned());
-        self
-    }
-
-    /// Sets the extension of the temporary file used as a buffer. Useful for hinting to the editor which syntax highlighting to use.
-    /// # Example
-    /// ```no_run
-    /// # use scrawl::editor::Editor;
-    /// # use scrawl::error::ScrawlError;
-    ///
-    /// # fn main() -> Result<(), ScrawlError> {
-    ///   let output = Editor::new()
-    ///                          .extension(".rs")
-    ///                          .open()?;
-    ///   println!("{}", output);
-    /// #   Ok(())
-    /// # }
-    /// ```
-    pub fn extension(&mut self, ext: &str) -> &mut Editor {
-        self.extension = Some(ext.to_owned());
-        self
-    }
-
-    /// Sets whether or not to trim the resulting String of whitespace
-    /// # Example
-    /// ```no_run
-    /// # use scrawl::editor::Editor;
-    /// # use scrawl::error::ScrawlError;
-    ///
-    /// # fn main() -> Result<(), ScrawlError> {
-    ///   let output = Editor::new()
-    ///                          .trim(false)
-    ///                          .open()?;
-    ///   println!("{}", output);
-    /// #   Ok(())
-    /// # }
-    /// ```
-    pub fn trim(&mut self, b: bool) -> &mut Editor {
-        self.trim = b;
-        self
-    }
-
-    /// Sets whether or not to save changes to the file specified in 'file'.
-    /// # Example
-    /// ```no_run
-    /// # use scrawl::editor::Editor;
-    /// # use scrawl::error::ScrawlError;
-    ///
-    /// # fn main() -> Result<(), ScrawlError> {
-    ///   let output = Editor::new()
-    ///                          .edit_directly(true)
-    ///                          .open()?;
-    ///   println!("{}", output);
-    /// #   Ok(())
-    /// # }
-    /// ```
-    pub fn edit_directly(&mut self, b: bool) -> &mut Editor {
-        self.edit_directly = b;
-        self
-    }
-
-    /* Utility */
-
-    /* Opens the file in the user's preferred text editor, and returns the
-     * contents as a String.
-     */
-    fn open_editor(&self) -> Result<String, ScrawlError> {
-        let editor_name = self.get_editor_name();
-        let path = self.get_file()?;
-
-        match Command::new(&editor_name).arg(&path).status() {
-            Ok(status) if status.success() => {
-                fs::read_to_string(path).map_err(|_| ScrawlError::FailedToCaptureInput)
+    /// Use the contents of this string to seed the text buffer.
+    pub fn contents<S: AsRef<str>>(self, contents: S) -> Editor<ContentState> {
+        Editor {
+            editor: self.editor,
+            unique: ContentState { 
+                contents: contents.as_ref().to_owned(),
             }
-            _ => Err(ScrawlError::FailedToOpenEditor(editor_name)),
         }
     }
 
-    /* Attempts to determine which text editor to open the text buffer with. */
-    fn get_editor_name(&self) -> String {
-        /* Use the editor set by the caller */
-        if let Some(ref editor) = self.editor {
-            return editor.to_owned();
-        }
+}
 
-        /* Check env vars for a default editor */
-        if let Ok(editor) = var("VISUAL").or_else(|_| var("EDITOR")) {
-            return editor;
-        }
+/* Editor that has its contents initialized by the contents of a file */
+#[derive(Debug)]
+/// State machine type marker. Holds the path of the file that the text buffer will be seeded with.
+pub struct FileState { path: PathBuf, }
+impl EditorState for FileState {}
 
+impl Editor<FileState> {
+    /// Open a buffer seeded with the contents of the file at the path provided.
+    pub fn open(&self) -> Result<String, ScrawlError> {
+        /* Copy the contents of this file to the temp file */
+        let temp_file_path = create_temp_file()?;
+        fs::copy(&self.unique.path, &temp_file_path).map_err(|_| {
+            let path = self.unique.path.to_string_lossy().into();
+            ScrawlError::FailedToCopyToTempFile(path)
+        })?;
+
+        open_editor(&self.editor,&temp_file_path)
+    }
+
+    /// Edit the file directly.
+    pub fn edit(self) -> Editor<EditFileState> {
+        Editor {
+            editor: self.editor,
+            unique: EditFileState { path: self.unique.path, }
+        }
+    }
+}
+
+/* Editor that directly edit the contents of a file */
+#[derive(Debug)]
+/// State machine type marker. Holds the file that will be edited.
+pub struct EditFileState { path: PathBuf }
+impl EditorState for EditFileState {}
+
+impl Editor<EditFileState> {
+    /// Open a file in the text editor for direct editing.
+    pub fn open(&self) -> Result<(), ScrawlError> {
+        Command::new(&self.editor)
+                    .arg(&self.unique.path)
+                    .status()
+                    .map(|_| ())
+                    .map_err(|_| ScrawlError::FailedToOpenEditor(self.editor.clone()))
+    }
+}
+
+/* Editor that has contents initialized by a string */
+#[derive(Debug)]
+/// State machine type marker. Holds the contents of the string that the text buffer will be seeded with.
+pub struct ContentState { contents: String }
+impl EditorState for ContentState {}
+
+impl Editor<ContentState> {
+    /// Open a buffer seeded with the contents of a String in a text editor.
+    pub fn open(&self) -> Result<String, ScrawlError> {
+        /* Copy the contents of this file to the temp file */
+        let temp_file_path = create_temp_file()?;
+        fs::write(&temp_file_path, &self.unique.contents).map_err(|_| {
+            ScrawlError::FailedToCopyToTempFile("[String]".into())
+        })?;
+
+        open_editor(&self.editor, &temp_file_path)
+    }
+}
+
+/* Utility */
+
+/* Opens the file specified in path in the user's preferred text editor for 
+ * editing and returns the contents as a String.
+ */
+fn open_editor(editor: &str, path: &Path) -> Result<String, ScrawlError> {
+    match Command::new(editor).arg(path).status() {
+        Ok(status) if status.success() => {
+            fs::read_to_string(path)
+                .map_err(|_| ScrawlError::FailedToCaptureInput)
+        }
+        _ => Err(ScrawlError::FailedToOpenEditor(String::from(editor))),
+    }
+}
+
+/* Used to seed the default editor value */
+fn get_default_editor_name() -> String {
+    var("VISUAL").or(var("EDITOR")).unwrap_or_else(|_| {
         /* Take a guess based on the system */
         if cfg!(windows) {
             String::from("notepad.exe")
         } else {
             String::from("vi")
         }
-    }
-
-    /* Returns the file to use as a buffer. Copies data to it if required */
-    fn get_file(&self) -> Result<PathBuf, ScrawlError> {
-        match self.file {
-            Some(ref path) if self.edit_directly => Ok(path.to_owned()),
-            _ => {
-                /* Create a tempfile to use a buffer */
-                let tempfile = self.create_temp_file()?;
-
-                /* Seed the tempfile with content (if any) */
-                if let Some(ref content) = self.content {
-                    fs::write(&tempfile, content)
-                        .map_err(|_| ScrawlError::FailedToCopyToTempFile("[String]".into()))?;
-                } else if let Some(ref path) = self.file {
-                    fs::copy(path, &tempfile).map_err(|_| {
-                        let path = path.to_str().unwrap_or("<unknown>");
-                        ScrawlError::FailedToCopyToTempFile(String::from(path))
-                    })?;
-                }
-
-                Ok(tempfile)
-            }
-        }
-    }
-
-    /* Creates a thread safe, process safe tempfile to use as a buffer */
-    fn create_temp_file(&self) -> Result<PathBuf, ScrawlError> {
-        /* Generate unique path to a temporary file buffer */
-        let process_id = std::process::id();
-        let i = TEMP_FILE_COUNT.fetch_add(1, Ordering::SeqCst);
-        let ext = self.extension.as_ref().map_or("", AsRef::as_ref);
-        let temp_file = format!("{}_{}_{}{}", PREFIX, process_id, i, ext);
-
-        /* Push the file to the OS's temp dir */
-        let mut temp_dir = temp_dir();
-        temp_dir.push(temp_file);
-
-        /* Create the file */
-        fs::File::create(&temp_dir).map_err(|_e| ScrawlError::FailedToCreateTempfile)?;
-
-        Ok(temp_dir)
-    }
-
-    /// Opens a text editor with the settings in the struct. Returns a Result with the String upon success.
-    /// # Example
-    /// ```no_run
-    /// # use scrawl::editor::Editor;
-    /// # use scrawl::error::ScrawlError;
-    ///
-    /// # fn main() -> Result<(), ScrawlError> {
-    /// let output = Editor::new()
-    ///                        .file("hello.txt")
-    ///                        .open()?;
-    /// println!("{}", output);
-    /// #   Ok(())
-    /// # }
-    /// ```
-    pub fn open(&self) -> Result<String, ScrawlError> {
-        let mut output = self.open_editor()?;
-
-        if self.trim {
-            output = output.trim().to_owned();
-        }
-
-        Ok(output)
-    }
+    })
 }
+
+/* Creates a thread safe, process safe tempfile to use as a buffer */
+fn create_temp_file() -> Result<PathBuf, ScrawlError> {
+    /* Generate unique path to a temporary file buffer */
+    let process_id = std::process::id();
+    let i = TEMP_FILE_COUNT.fetch_add(1, Ordering::SeqCst);
+    let temp_file = format!("{}_{}_{}", PREFIX, process_id, i);
+
+    /* Push the file to the OS's temp dir */
+    let mut temp_dir = temp_dir();
+    temp_dir.push(temp_file);
+
+    /* Create the file */
+    fs::File::create(&temp_dir).map_err(|_| ScrawlError::FailedToCreateTempfile)?;
+
+    Ok(temp_dir)
+}
+
