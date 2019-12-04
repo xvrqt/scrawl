@@ -15,7 +15,7 @@ fn main() {
     let output = scrawl::new()?;
     println!("User Input: {}", output);
 
-    // Open a buffer with text from a string in the text editor
+    // Open a buffer with contents in the text editor
     let output = scrawl::with("Favorite color: ")?;
     println!("{}", output);
 
@@ -41,11 +41,11 @@ fn main() {
                         .extension(".txt")
                         .trim(true);
 
-    let fave_color = editor.edit().unwrap();
+    let fave_color = editor.open().unwrap();
 
     /* Change the prompt, keep other settings the same */
     editor.contents("My favorite bird is: ");
-    let fave_bird = editor.edit().unwrap();
+    let fave_bird = editor.open().unwrap();
 
     println!("About Me:\n{}\n{}", fave_color, fave_bird);
 }
@@ -58,37 +58,37 @@ If you want to open a one off editor without using settings, see the **Functions
 #### Editor
 You can set a preferred text editor for the user. Otherwise, $VISUAL, $EDITOR or "textpad.exe"/"vi" is used as a fallback if none is set.
 ```rust
-let output = Editor::new().editor("vim").edit()?;
+let output = Editor::new().editor("vim").open()?;
 ```
 
 #### File
 You can set a file from which the text buffer will be seeded. If the file has an extension, this will also set the extension of the temporary buffer. This will _**not**_ modify the file.
 ```rust
-let output = Editor::new().file("my_survey.txt").edit()?;
+let output = Editor::new().file("my_survey.txt").open()?;
 ```
 
 #### Contents 
 You can use a string to seed the text buffer.
 ```rust
-let output = Editor::new().contents("Favorite Number: ").edit()?;
+let output = Editor::new().contents("Favorite Number: ").open()?;
 ```
 
 #### Extension 
 Set the extension of the temporary file created as a buffer. Useful for hinting to text editors which syntax highlighting to use.
 ```rust
-let output = Editor::new().extension(".rs").edit()?;
+let output = Editor::new().extension(".rs").open()?;
 ```
 
 #### Trim 
 Trim leading and trailing whitespace from the result. Enabled by default.
 ```rust
-let output = Editor::new().trim(false).edit()?;
+let output = Editor::new().trim(false).open()?;
 ```
 
 #### Edit Directly
 If **file** is set, this will open that file for editing (instead of a temporary file) and any changes made will be reflected to that file. Disabled by default.
 ```rust
-let output = Editor::new().file("lib.rs").edit_directly(true).edit()?;
+let output = Editor::new().file("lib.rs").edit_directly(true).open()?;
 ```
 
 ## Functions
@@ -103,10 +103,7 @@ Open an empty text buffer in the user's preferred editor. Returns a Result<Strin
 use scrawl;
 
 fn main() {
-    let output = match scrawl::new(path) {
-        Ok(s) => s,
-        Err(e) => e.to_string()
-    };
+    let output = scrawl::new(path).unwrap();
     println!("{}", output);
 }
 ```
@@ -120,10 +117,7 @@ Open an text buffer with the contents of the String slice in the user's preferre
 use scrawl;
 
 fn main() {
-    let output = match scrawl::with("Hello World!") {
-        Ok(s) => s,
-        Err(e) => e.to_string()
-    };
+    let output = scrawl::with("Hello World!").unwrap();
     println!("{}", output);
 }
 ```
@@ -135,14 +129,9 @@ Open opens a text buffer in an editor with the contents of the file specified. T
 
 ```rust
 use scrawl;
-use std::path::Path;
 
 fn main() {
-    let path = Path::new("hello.txt");
-    let output = match scrawl::open(path) {
-         Ok(s) => s,
-         Err(e) => e.to_string()
-    };
+    let output = scrawl::open("hello.txt").unwrap();
     println!("{}", output);
 }
 ```
@@ -154,14 +143,9 @@ Edit opens a text buffer in an editor with the contents of the file specified. T
 
 ```rust
 use scrawl;
-use std::path::Path;
 
 fn main() {
-    let path = Path::new("hello.txt");
-    let output = match scrawl::edit(path) {
-         Ok(s) => s,
-         Err(e) => e.to_string()
-    };
+    let output = scrawl::edit("README.md").unwrap();
     println!("{}", output);
 }
 ```
