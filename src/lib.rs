@@ -1,20 +1,26 @@
 //! # Scrawl
 //! A library for opening a file for editing in a text editor and capturing the result as a String
-#![deny(missing_docs,
-        missing_debug_implementations, missing_copy_implementations,
-        trivial_casts, trivial_numeric_casts,
-        unstable_features, unsafe_code,
-        unused_import_braces, unused_qualifications)]
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    missing_copy_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unstable_features,
+    unsafe_code,
+    unused_import_braces,
+    unused_qualifications
+)]
 
 /* Standard Library */
 use std::path::Path;
 
 /* Internal Modules */
 pub mod error;
-use error::ScrawlError as ScrawlError;
+use error::ScrawlError;
 
 pub mod editor;
-use editor::Editor as Editor;
+use editor::Editor;
 
 /* Convenience functions */
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
@@ -29,7 +35,7 @@ use editor::Editor as Editor;
 /// # }
 /// ```
 pub fn new() -> Result<String, ScrawlError> {
-    Editor::new().edit()
+    Editor::new().open()
 }
 
 /// With opens a text buffer with the contents of the provided String in an editor. Returns a Result<String> with the edited contents.
@@ -44,7 +50,7 @@ pub fn new() -> Result<String, ScrawlError> {
 /// # }
 /// ```
 pub fn with(content: &str) -> Result<String, ScrawlError> {
-    Editor::new().contents(content).edit()
+    Editor::new().contents(content).open()
 }
 
 /// Open opens a text buffer in an editor with the contents of the file specified. This does **not** edit the contents of the file. Returns a Result<String> with the contents of the buffer.
@@ -65,7 +71,7 @@ pub fn with(content: &str) -> Result<String, ScrawlError> {
 /// # }
 /// ```
 pub fn open<P: AsRef<Path>>(path: P) -> Result<String, ScrawlError> {
-    Editor::new().file(path.as_ref()).edit()
+    Editor::new().file(path.as_ref()).open()
 }
 
 /// Edit opens a text buffer in an editor with the contents of the file specified. This **does** edit the contents of the file. Returns a Result<String> with the contents of the buffer.
@@ -75,13 +81,12 @@ pub fn open<P: AsRef<Path>>(path: P) -> Result<String, ScrawlError> {
 /// # use scrawl::error::ScrawlError;
 /// # use std::path::Path;
 ///
-/// # fn main() -> Result<(), ScrawlError> { 
+/// # fn main() -> Result<(), ScrawlError> {
 ///     let output = scrawl::edit(&"hello.txt")?;
 ///     println!("{}", output);
 /// #   Ok(())
 /// # }
 /// ```
 pub fn edit<P: AsRef<Path>>(path: P) -> Result<String, ScrawlError> {
-    Editor::new().file(path.as_ref()).edit_directly(true).edit()
+    Editor::new().file(path.as_ref()).edit_directly(true).open()
 }
-

@@ -8,15 +8,15 @@
 
 /* Standard Library */
 use std::{
-    fs,
     env::{temp_dir, var},
+    fs,
     path::{Path, PathBuf},
+    process::Command,
     sync::atomic::{AtomicUsize, Ordering},
-    process::Command
 };
 
 /* Internal Modules */
-use crate::error::ScrawlError as ScrawlError;
+use crate::error::ScrawlError;
 
 /* Constants used by the struct to prevent naming collisions of buffer */
 const PREFIX: &str = "xvrqt_scrawl";
@@ -48,7 +48,7 @@ impl Editor {
     /// # use scrawl::error::ScrawlError;
     ///
     /// # fn main() -> Result<(), ScrawlError> {
-    ///   let output = Editor::new().edit()?;
+    ///   let output = Editor::new().open()?;
     ///   println!("{}", output);
     /// #   Ok(())
     /// # }
@@ -77,13 +77,13 @@ impl Editor {
     /// # fn main() -> Result<(), ScrawlError> {
     ///   let output = Editor::new()
     ///                          .editor("vim")
-    ///                          .edit()?;
+    ///                          .open()?;
     ///   println!("{}", output);
     /// #   Ok(())
     /// # }
     /// ```
     pub fn editor(&mut self, command: &str) -> &mut Editor {
-        self.editor= Some(command.to_owned());
+        self.editor = Some(command.to_owned());
         self
     }
 
@@ -96,7 +96,7 @@ impl Editor {
     /// # fn main() -> Result<(), ScrawlError> {
     ///   let output = Editor::new()
     ///                          .file("hello.txt")
-    ///                          .edit()?;
+    ///                          .open()?;
     ///   println!("{}", output);
     /// #   Ok(())
     /// # }
@@ -124,7 +124,7 @@ impl Editor {
     /// # fn main() -> Result<(), ScrawlError> {
     ///   let output = Editor::new()
     ///                          .contents("Tell me your best memory:\n")
-    ///                          .edit()?;
+    ///                          .open()?;
     ///   println!("{}", output);
     /// #   Ok(())
     /// # }
@@ -143,7 +143,7 @@ impl Editor {
     /// # fn main() -> Result<(), ScrawlError> {
     ///   let output = Editor::new()
     ///                          .extension(".rs")
-    ///                          .edit()?;
+    ///                          .open()?;
     ///   println!("{}", output);
     /// #   Ok(())
     /// # }
@@ -162,7 +162,7 @@ impl Editor {
     /// # fn main() -> Result<(), ScrawlError> {
     ///   let output = Editor::new()
     ///                          .trim(false)
-    ///                          .edit()?;
+    ///                          .open()?;
     ///   println!("{}", output);
     /// #   Ok(())
     /// # }
@@ -181,7 +181,7 @@ impl Editor {
     /// # fn main() -> Result<(), ScrawlError> {
     ///   let output = Editor::new()
     ///                          .edit_directly(true)
-    ///                          .edit()?;
+    ///                          .open()?;
     ///   println!("{}", output);
     /// #   Ok(())
     /// # }
@@ -195,31 +195,29 @@ impl Editor {
 
     /* Opens the file in the user's preferred text editor, and returns the
      * contents as a String.
-    */
+     */
     fn open_editor(&self) -> Result<String, ScrawlError> {
         let editor_name = self.get_editor_name();
         let path = self.get_file()?;
 
-        match Command::new(&editor_name)
-            .arg(&path)
-            .status() {
-                Ok(status) if status.success() => {
-                    fs::read_to_string(path).map_err(|_| {
-                        ScrawlError::FailedToCaptureInput
-                    })
-                },
-                _ => Err(ScrawlError::FailedToOpenEditor(editor_name))
+        match Command::new(&editor_name).arg(&path).status() {
+            Ok(status) if status.success() => {
+                fs::read_to_string(path).map_err(|_| ScrawlError::FailedToCaptureInput)
+            }
+            _ => Err(ScrawlError::FailedToOpenEditor(editor_name)),
         }
     }
 
     /* Attempts to determine which text editor to open the text buffer with. */
     fn get_editor_name(&self) -> String {
         /* Use the editor set by the caller */
-        if let Some(ref editor) = self.editor { return editor.to_owned() }
+        if let Some(ref editor) = self.editor {
+            return editor.to_owned();
+        }
 
         /* Check env vars for a default editor */
         if let Ok(editor) = var("VISUAL").or_else(|_| var("EDITOR")) {
-            return editor
+            return editor;
         }
 
         /* Take a guess based on the system */
@@ -240,9 +238,8 @@ impl Editor {
 
                 /* Seed the tempfile with content (if any) */
                 if let Some(ref content) = self.content {
-                    fs::write(&tempfile, content).map_err(|_| {
-                        ScrawlError::FailedToCopyToTempFile("[String]".into())
-                    })?;
+                    fs::write(&tempfile, content)
+                        .map_err(|_| ScrawlError::FailedToCopyToTempFile("[String]".into()))?;
                 } else if let Some(ref path) = self.file {
                     fs::copy(path, &tempfile).map_err(|_| {
                         let path = path.to_str().unwrap_or("<unknown>");
@@ -268,9 +265,7 @@ impl Editor {
         temp_dir.push(temp_file);
 
         /* Create the file */
-        fs::File::create(&temp_dir).map_err(|_e| {
-            ScrawlError::FailedToCreateTempfile
-        })?;
+        fs::File::create(&temp_dir).map_err(|_e| ScrawlError::FailedToCreateTempfile)?;
 
         Ok(temp_dir)
     }
@@ -284,12 +279,12 @@ impl Editor {
     /// # fn main() -> Result<(), ScrawlError> {
     /// let output = Editor::new()
     ///                        .file("hello.txt")
-    ///                        .edit()?;
+    ///                        .open()?;
     /// println!("{}", output);
     /// #   Ok(())
     /// # }
     /// ```
-    pub fn edit(&self) -> Result<String, ScrawlError> {
+    pub fn open(&self) -> Result<String, ScrawlError> {
         let mut output = self.open_editor()?;
 
         if self.trim {
@@ -299,4 +294,3 @@ impl Editor {
         Ok(output)
     }
 }
-
