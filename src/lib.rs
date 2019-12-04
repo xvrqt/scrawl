@@ -55,14 +55,17 @@ pub fn with(content: &str) -> Result<String, ScrawlError> {
 /// # use std::path::Path;
 ///
 /// # fn main() -> Result<(), ScrawlError> {
-///     let path = Path::new("hello.txt");
+///     let output = scrawl::open("hello.txt")?;
+///     println!("{}", output);
+///
+///     let path = Path::new("website.html");
 ///     let output = scrawl::open(path)?;
 ///     println!("{}", output);
 /// #   Ok(())
 /// # }
 /// ```
-pub fn open(p: &Path) -> Result<String, ScrawlError> {
-    Editor::new().file(p).edit()
+pub fn open<P: AsRef<Path>>(path: P) -> Result<String, ScrawlError> {
+    Editor::new().file(path.as_ref()).edit()
 }
 
 /// Edit opens a text buffer in an editor with the contents of the file specified. This **does** edit the contents of the file. Returns a Result<String> with the contents of the buffer.
@@ -73,13 +76,12 @@ pub fn open(p: &Path) -> Result<String, ScrawlError> {
 /// # use std::path::Path;
 ///
 /// # fn main() -> Result<(), ScrawlError> { 
-///     let path = Path::new("hello.txt");
-///     let output = scrawl::edit(path)?;
+///     let output = scrawl::edit(&"hello.txt")?;
 ///     println!("{}", output);
 /// #   Ok(())
 /// # }
 /// ```
-pub fn edit(p: &Path) -> Result<String, ScrawlError> {
-    Editor::new().file(p).edit_directly(true).edit()
+pub fn edit<P: AsRef<Path>>(path: P) -> Result<String, ScrawlError> {
+    Editor::new().file(path.as_ref()).edit_directly(true).edit()
 }
 
