@@ -9,7 +9,7 @@ pub enum ScrawlError {
     FailedToCreateTempfile,
     /// Could not open the editor, or the editor quit with an error.
     FailedToOpenEditor(String),
-    /// Could not read the the file into a valid UTF-8 String.
+    /// Could not read the file into a valid UTF-8 String.
     FailedToCaptureInput,
     /// Could not open the file specified in the scrawl::open function.
     FailedToCopyToTempFile(String)

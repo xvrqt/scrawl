@@ -21,29 +21,27 @@ use editor::Editor as Editor;
 ///
 /// # Example
 /// ```no_run
-/// fn main() {
-///     let output = match scrawl::new() {
-///          Ok(s) => s,
-///          Err(e) => e.to_string()
-///    };
-///    println!("{}", output);
-/// }
+/// # use scrawl::error::ScrawlError;
+/// # fn main() -> Result<(), ScrawlError> {
+///     let output = scrawl::new()?;
+///     println!("{}", output);
+/// #   Ok(())
+/// # }
 /// ```
 pub fn new() -> Result<String, ScrawlError> {
     Editor::new().edit()
 }
 
-/// New opens an text buffer with the contents of the provided String in an editor. Returns a Result<String> with the edited contents.
+/// With opens a text buffer with the contents of the provided String in an editor. Returns a Result<String> with the edited contents.
 ///
 /// # Example
 /// ```no_run
-/// fn main() {
-///     let output = match scrawl::with("Hello World!") {
-///          Ok(s) => s,
-///          Err(e) => e.to_string()
-///    };
-///    println!("{}", output);
-/// }
+/// # use scrawl::error::ScrawlError;
+/// # fn main() -> Result<(), ScrawlError> {
+///     let output = scrawl::with("Hello World!")?;
+///     println!("{}", output);
+/// #   Ok(())
+/// # }
 /// ```
 pub fn with(content: &str) -> Result<String, ScrawlError> {
     Editor::new().contents(content).edit()
@@ -53,16 +51,15 @@ pub fn with(content: &str) -> Result<String, ScrawlError> {
 ///
 /// # Example
 /// ```no_run
-/// use std::path::Path;
+/// # use scrawl::error::ScrawlError;
+/// # use std::path::Path;
 ///
-/// fn main() {
+/// # fn main() -> Result<(), ScrawlError> {
 ///     let path = Path::new("hello.txt");
-///     let output = match scrawl::open(path) {
-///          Ok(s) => s,
-///          Err(e) => e.to_string()
-///    };
-///    println!("{}", output);
-/// }
+///     let output = scrawl::open(path)?;
+///     println!("{}", output);
+/// #   Ok(())
+/// # }
 /// ```
 pub fn open(p: &Path) -> Result<String, ScrawlError> {
     Editor::new().file(p).edit()
@@ -72,16 +69,15 @@ pub fn open(p: &Path) -> Result<String, ScrawlError> {
 ///
 /// # Example
 /// ```no_run
-/// use std::path::Path;
+/// # use scrawl::error::ScrawlError;
+/// # use std::path::Path;
 ///
-/// fn main() {
+/// # fn main() -> Result<(), ScrawlError> { 
 ///     let path = Path::new("hello.txt");
-///     let output = match scrawl::edit(path) {
-///          Ok(s) => s,
-///          Err(e) => e.to_string()
-///    };
-///    println!("{}", output);
-/// }
+///     let output = scrawl::edit(path)?;
+///     println!("{}", output);
+/// #   Ok(())
+/// # }
 /// ```
 pub fn edit(p: &Path) -> Result<String, ScrawlError> {
     Editor::new().file(p).edit_directly(true).edit()
