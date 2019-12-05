@@ -24,8 +24,7 @@ fn main() {
     println!("{}", output);
 
     // Open a file for direct editing in the text editor
-    let output = scrawl::edit("README.md")?;
-    println!("{}", output);
+    scrawl::edit("README.md")?;
 }
 ```
 
