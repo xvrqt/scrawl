@@ -37,7 +37,7 @@ static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub fn new() -> Editor<InitialState> {
     Editor {
         editor: get_default_editor_name(),
-        unique: InitialState {}
+        unique: InitialState { extension: String::from(".txt") }
     }
 }
 
@@ -55,15 +55,35 @@ pub struct Editor<S: EditorState> {
 }
 
 /* The initial state of the Editor */
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 /// State machine type marker. Initial state of the editor.
-pub struct InitialState {}
+pub struct InitialState { extension: String }
 impl EditorState for InitialState {}
 
 impl Editor<InitialState> {
     /// Set the editor to open the buffer in. If not set, uses the user's default editor set by the $EDITOR environment variable.
-    pub fn editor<'a>(&'a mut self, editor_name: &str) -> &'a mut Self {
+    pub fn editor(mut self, editor_name: &str) -> Self {
         self.editor = editor_name.to_owned();
+        self
+    }
+
+    /// Set the extension of the temporary file used as a buffer. Useful for having the text editor hilight syntax appropriately. 
+    /// Open an empty buffer
+    /// # Example
+    /// ```no_run
+    /// # use scrawl::error::ScrawlError;
+    ///
+    /// # fn main() -> Result<(), ScrawlError> {
+    ///   let editor = scrawl::editor::new()
+    ///                                 .editor("vim")
+    ///                                 .extension(".rs");
+    ///   let output = editor.open()?;
+    ///   println!("{}", output);
+    /// #   Ok(())
+    /// # }
+    /// ```
+    pub fn extension(mut self, ext: &str) -> Self {
+        self.unique.extension = ext.to_owned();
         self
     }
 
@@ -100,6 +120,7 @@ impl Editor<InitialState> {
             editor: self.editor,
             unique: ContentState { 
                 contents: contents.as_ref().to_owned(),
+                extension: self.unique.extension
             }
         }
     }
@@ -154,7 +175,10 @@ impl Editor<EditFileState> {
 /* Editor that has contents initialized by a string */
 #[derive(Debug)]
 /// State machine type marker. Holds the contents of the string that the text buffer will be seeded with.
-pub struct ContentState { contents: String }
+pub struct ContentState { 
+    contents: String,
+    extension: String,
+}
 impl EditorState for ContentState {}
 
 impl Editor<ContentState> {
