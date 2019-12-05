@@ -37,7 +37,9 @@ static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub fn new() -> Editor<InitialState> {
     Editor {
         editor: get_default_editor_name(),
-        unique: InitialState { extension: String::from(".txt") }
+        unique: InitialState {
+            extension: String::from(".txt"),
+        },
     }
 }
 
@@ -57,7 +59,9 @@ pub struct Editor<S: EditorState> {
 /* The initial state of the Editor */
 #[derive(Debug)]
 /// State machine type marker. Initial state of the editor.
-pub struct InitialState { extension: String }
+pub struct InitialState {
+    extension: String,
+}
 impl EditorState for InitialState {}
 
 impl Editor<InitialState> {
@@ -67,7 +71,7 @@ impl Editor<InitialState> {
         self
     }
 
-    /// Set the extension of the temporary file used as a buffer. Useful for having the text editor hilight syntax appropriately. 
+    /// Set the extension of the temporary file used as a buffer. Useful for having the text editor hilight syntax appropriately.
     /// Open an empty buffer
     /// # Example
     /// ```no_run
@@ -103,14 +107,14 @@ impl Editor<InitialState> {
         let path = create_temp_file()?;
         open_editor(&self.editor, &path)
     }
-        
+
     /// Use the contents of this file to seed the text buffer.
     pub fn file<F: AsRef<Path>>(self, file: F) -> Editor<FileState> {
         Editor {
             editor: self.editor,
-            unique: FileState { 
+            unique: FileState {
                 path: file.as_ref().to_owned(),
-            }
+            },
         }
     }
 
@@ -118,19 +122,20 @@ impl Editor<InitialState> {
     pub fn contents<S: AsRef<str>>(self, contents: S) -> Editor<ContentState> {
         Editor {
             editor: self.editor,
-            unique: ContentState { 
+            unique: ContentState {
                 contents: contents.as_ref().to_owned(),
-                extension: self.unique.extension
-            }
+                extension: self.unique.extension,
+            },
         }
     }
-
 }
 
 /* Editor that has its contents initialized by the contents of a file */
 #[derive(Debug)]
 /// State machine type marker. Holds the path of the file that the text buffer will be seeded with.
-pub struct FileState { path: PathBuf, }
+pub struct FileState {
+    path: PathBuf,
+}
 impl EditorState for FileState {}
 
 impl Editor<FileState> {
@@ -143,14 +148,16 @@ impl Editor<FileState> {
             ScrawlError::FailedToCopyToTempFile(path)
         })?;
 
-        open_editor(&self.editor,&temp_file_path)
+        open_editor(&self.editor, &temp_file_path)
     }
 
     /// Edit the file directly.
     pub fn edit(self) -> Editor<EditFileState> {
         Editor {
             editor: self.editor,
-            unique: EditFileState { path: self.unique.path, }
+            unique: EditFileState {
+                path: self.unique.path,
+            },
         }
     }
 }
@@ -158,24 +165,26 @@ impl Editor<FileState> {
 /* Editor that directly edit the contents of a file */
 #[derive(Debug)]
 /// State machine type marker. Holds the file that will be edited.
-pub struct EditFileState { path: PathBuf }
+pub struct EditFileState {
+    path: PathBuf,
+}
 impl EditorState for EditFileState {}
 
 impl Editor<EditFileState> {
     /// Open a file in the text editor for direct editing.
     pub fn open(&self) -> Result<(), ScrawlError> {
         Command::new(&self.editor)
-                    .arg(&self.unique.path)
-                    .status()
-                    .map(|_| ())
-                    .map_err(|_| ScrawlError::FailedToOpenEditor(self.editor.clone()))
+            .arg(&self.unique.path)
+            .status()
+            .map(|_| ())
+            .map_err(|_| ScrawlError::FailedToOpenEditor(self.editor.clone()))
     }
 }
 
 /* Editor that has contents initialized by a string */
 #[derive(Debug)]
 /// State machine type marker. Holds the contents of the string that the text buffer will be seeded with.
-pub struct ContentState { 
+pub struct ContentState {
     contents: String,
     extension: String,
 }
@@ -186,9 +195,8 @@ impl Editor<ContentState> {
     pub fn open(&self) -> Result<String, ScrawlError> {
         /* Copy the contents of this file to the temp file */
         let temp_file_path = create_temp_file()?;
-        fs::write(&temp_file_path, &self.unique.contents).map_err(|_| {
-            ScrawlError::FailedToCopyToTempFile("[String]".into())
-        })?;
+        fs::write(&temp_file_path, &self.unique.contents)
+            .map_err(|_| ScrawlError::FailedToCopyToTempFile("[String]".into()))?;
 
         open_editor(&self.editor, &temp_file_path)
     }
@@ -196,14 +204,13 @@ impl Editor<ContentState> {
 
 /* Utility */
 
-/* Opens the file specified in path in the user's preferred text editor for 
+/* Opens the file specified in path in the user's preferred text editor for
  * editing and returns the contents as a String.
  */
 fn open_editor(editor: &str, path: &Path) -> Result<String, ScrawlError> {
     match Command::new(editor).arg(path).status() {
         Ok(status) if status.success() => {
-            fs::read_to_string(path)
-                .map_err(|_| ScrawlError::FailedToCaptureInput)
+            fs::read_to_string(path).map_err(|_| ScrawlError::FailedToCaptureInput)
         }
         _ => Err(ScrawlError::FailedToOpenEditor(String::from(editor))),
     }
@@ -211,14 +218,16 @@ fn open_editor(editor: &str, path: &Path) -> Result<String, ScrawlError> {
 
 /* Used to seed the default editor value */
 fn get_default_editor_name() -> String {
-    var("VISUAL").or(var("EDITOR")).unwrap_or_else(|_| {
-        /* Take a guess based on the system */
-        if cfg!(windows) {
-            String::from("notepad.exe")
-        } else {
-            String::from("vi")
-        }
-    })
+    var("VISUAL")
+        .or_else(|_| var("EDITOR"))
+        .unwrap_or_else(|_| {
+            /* Take a guess based on the system */
+            if cfg!(windows) {
+                String::from("notepad.exe")
+            } else {
+                String::from("vi")
+            }
+        })
 }
 
 /* Creates a thread safe, process safe tempfile to use as a buffer */
@@ -237,4 +246,3 @@ fn create_temp_file() -> Result<PathBuf, ScrawlError> {
 
     Ok(temp_dir)
 }
-

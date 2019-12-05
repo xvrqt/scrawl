@@ -1,7 +1,7 @@
 //! # Scrawl Error Types
 //! Error enum used by the Scrawl crate.
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 
 /// Error enum for the Scrawl crate
 #[derive(Debug)]
@@ -55,4 +55,3 @@ impl Error for ScrawlError {
         None
     }
 }
-
