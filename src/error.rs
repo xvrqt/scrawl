@@ -1,6 +1,7 @@
 //! # Scrawl Error Types
 //! Error enum used by the Scrawl crate.
 use std::fmt;
+use std::error::Error;
 
 /// Error enum for the Scrawl crate
 #[derive(Debug)]
@@ -47,3 +48,11 @@ impl fmt::Display for ScrawlError {
         write!(f, "{}", error)
     }
 }
+
+/* Cowards way out */
+impl Error for ScrawlError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
+}
+
