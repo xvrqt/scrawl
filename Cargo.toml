@@ -12,3 +12,5 @@ description = "Opens a user's preferred text editor so they can edit data inline
 keywords = ["editor", "cli", "text", "xvrqt"]
 categories = ["config", "text-editors", "command-line-interface"]
 
+[dependencies]
+shell-words = "1.0.0"

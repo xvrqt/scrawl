@@ -208,11 +208,17 @@ impl Editor<ContentState> {
  * editing and returns the contents as a String.
  */
 fn open_editor(editor: &str, path: &Path) -> Result<String, ScrawlError> {
-    match Command::new(editor).arg(path).status() {
+    let create_error = || ScrawlError::FailedToOpenEditor(String::from(editor));
+
+    // Split "a-cmd an-arg an-arg2" into the base program ("a-cmd") and the base args ("an-arg", "an-arg2")
+    let words = shell_words::split(editor).map_err(|_| create_error())?;
+    let (program, base_args) = words.split_first().ok_or_else(create_error)?;
+
+    match Command::new(program).args(base_args).arg(path).status()  {
         Ok(status) if status.success() => {
             fs::read_to_string(path).map_err(|_| ScrawlError::FailedToCaptureInput)
         }
-        _ => Err(ScrawlError::FailedToOpenEditor(String::from(editor))),
+        _ => Err(create_error()),
     }
 }
 
