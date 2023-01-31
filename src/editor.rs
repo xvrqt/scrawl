@@ -27,21 +27,6 @@ trait ScrawlState {}
 const SCRAWL_TEMP_DIR: &str = "xvrqt_scrawl";
 static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-/* Program list */
-static WINDOWS_PROGRAM_01: &str = "notepad.exe";
-
-static LINUX_PROGRAM_01: &str = "vim";
-static LINUX_PROGRAM_02: &str = "neovim";
-static LINUX_PROGRAM_03: &str = "nvim";
-static LINUX_PROGRAM_04: &str = "nano";
-static LINUX_PROGRAM_05: &str = "emacs";
-static LINUX_PROGRAM_06: &str = "mcedit";
-static LINUX_PROGRAM_07: &str = "tilde";
-static LINUX_PROGRAM_08: &str = "micro";
-static LINUX_PROGRAM_09: &str = "helix";
-static LINUX_PROGRAM_10: &str = "ne";
-static LINUX_PROGRAM_11: &str = "vi";
-
 /// Used to customize the editor before opening it, and to handle closing the program and collecting the output at the end.
 #[derive(Debug, Clone, Copy)]
 pub struct Editor {}
@@ -109,19 +94,13 @@ impl Editor {
         if let Ok(p) = env::var("EDITOR") { programs.push(OsString::from(p)) };
         
         /* Add some common programs */
-        if cfg!(windows) { programs.push(WINDOWS_PROGRAM_01.into()); }
+        if cfg!(windows) { programs.push("notepad.exe".into()); }
         else {
-            programs.push(LINUX_PROGRAM_01.into());
-            programs.push(LINUX_PROGRAM_02.into());
-            programs.push(LINUX_PROGRAM_03.into());
-            programs.push(LINUX_PROGRAM_04.into());
-            programs.push(LINUX_PROGRAM_05.into());
-            programs.push(LINUX_PROGRAM_06.into());
-            programs.push(LINUX_PROGRAM_07.into());
-            programs.push(LINUX_PROGRAM_08.into());
-            programs.push(LINUX_PROGRAM_09.into());
-            programs.push(LINUX_PROGRAM_10.into());
-            programs.push(LINUX_PROGRAM_11.into());
+            let p: Vec<OsString> = vec!["vim".into(), "neovim".into(),
+                "nvim".into(), "nano".into(), "emacs".into(), "mcedit".into(),
+                "tilde".into(), "micro".into(), "helix".into(), "ne".into(),
+                "vi".into()];
+            programs.extend_from_slice(&p);
         }
         programs
     }
@@ -151,7 +130,6 @@ impl SpecificEditor {
 
         Ok(Reader { path })
     }
-
 }
 
 /// After the user closes their editor, it transforms into a Reader object where the input can be retrieved.
