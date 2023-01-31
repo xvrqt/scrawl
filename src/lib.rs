@@ -16,7 +16,8 @@
 use std::error::Error;
 
 /* Internal Modules */
-pub mod editor;
+mod editor;
+pub use editor::Editor as Editor;
 
 /* Convenience functions */
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.

@@ -26,12 +26,24 @@ static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 /// Used to customize the editor before opening it, and to handle closing the program and collecting the output at the end.
 #[derive(Debug)]
-pub struct Editor { args: Vec<OsString> }
+pub struct Editor { editor: Option<OsString>, args: Vec<OsString> }
 
 impl Editor {
     /// Creates a new Editor struct, ready for customizing or opening.
     pub fn new() -> Editor {
-        Editor { args: vec![] }
+        Editor { editor: None, args: vec![] }
+    }
+
+    /// Add arguments that you want to be used when the command is run. The first argument is always the file being used as the buffer.
+    pub fn arg<S: AsRef<OsStr>>(mut self, arg: S) -> Editor {
+        self.args.push(OsString::from(arg.as_ref()));
+        self
+    }
+
+    /// Specify which editor should be opened instead of the user's default.
+    pub fn editor<S: AsRef<OsStr>>(mut self, editor: S) -> Editor {
+        self.editor = Some(OsString::from(editor.as_ref()));
+        self
     }
 
     /// Opens the user's editor.
@@ -40,15 +52,11 @@ impl Editor {
         let path = Editor::create_buffer_file()?;
 
         /* Open the editor, store a handle to the child process */
-        Command::new("vim").arg(&path).args(self.args).status()?;
+        let editor = self.editor.unwrap_or(OsString::fromw("vim"));
+        Command::new(editor).arg(&path).args(self.args).status()?;
         Ok(Reader { path })
     }
 
-    /// Add arguments that you want to be used when the command is run. The first argument is always the file being used as the buffer.
-    pub fn arg<S: AsRef<OsStr>>(mut self, arg: S) -> Editor {
-        self.args.push(OsString::from(arg.as_ref()));
-        self
-    }
 
     /// Creates a temporary file to use a buffer for the user's editor.
     fn create_buffer_file() -> Result<PathBuf, Box<dyn Error>> {
@@ -70,11 +78,12 @@ impl Editor {
 
         /* e.g. 1674864208_123_17.txt */
         let temp_file = format!("{}_{}_{}.txt", ts, process_id, i);
-        /* Create the file path */
+        /* Create the file path & file */
         temp_dir.push(&temp_file);
+        fs::File::create(&temp_dir)?;
 
+        /* Return the path */
         let path = PathBuf::from(temp_dir);
-
         Ok(path)
     }
 }
@@ -93,7 +102,7 @@ impl Reader {
 
     /// Returns the buffer as a String.
     pub fn to_string(&self) -> Result<String, Box<dyn Error>> {
-        Ok(fs::read_to_string(&self.path)?) 
+        Ok(fs::read_to_string(&self.path)?)
     }
 
     /// Returns the buffer as a BufReader.
