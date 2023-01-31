@@ -27,6 +27,21 @@ trait ScrawlState {}
 const SCRAWL_TEMP_DIR: &str = "xvrqt_scrawl";
 static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
+/* Program list */
+static WINDOWS_PROGRAM_01: &str = "notepad.exe";
+
+static LINUX_PROGRAM_01: &str = "vim";
+static LINUX_PROGRAM_02: &str = "neovim";
+static LINUX_PROGRAM_03: &str = "nvim";
+static LINUX_PROGRAM_04: &str = "nano";
+static LINUX_PROGRAM_05: &str = "emacs";
+static LINUX_PROGRAM_06: &str = "mcedit";
+static LINUX_PROGRAM_07: &str = "tilde";
+static LINUX_PROGRAM_08: &str = "micro";
+static LINUX_PROGRAM_09: &str = "helix";
+static LINUX_PROGRAM_10: &str = "ne";
+static LINUX_PROGRAM_11: &str = "vi";
+
 /// Used to customize the editor before opening it, and to handle closing the program and collecting the output at the end.
 #[derive(Debug, Clone, Copy)]
 pub struct Editor {}
@@ -50,9 +65,10 @@ impl Editor {
         /* Create a temporary file to use as a buffer */
         let path = Editor::create_buffer_file()?;
 
-        /* Open the editor, store a handle to the child process */
-        let editor = OsString::from("vim");
-        Command::new(editor).arg(&path).status()?;
+        Editor::get_editor_programs().iter().find(|e| {
+            Command::new(e).arg(&path).status().is_ok()
+        }).ok_or("Could not find a text editing program")?;
+
         Ok(Reader { path })
     }
 
@@ -83,6 +99,31 @@ impl Editor {
         /* Return the path */
         let path = PathBuf::from(temp_dir);
         Ok(path)
+    }
+
+    /// Returns the name of the editor to use if user specified, or a list of editors to try if Default is selected.
+    fn get_editor_programs() -> Vec<OsString> {
+        let mut programs = Vec::with_capacity(3);
+        /* Check the usual ENV variables for programs */
+        if let Ok(p) = env::var("VISUAL") { programs.push(OsString::from(p)) };
+        if let Ok(p) = env::var("EDITOR") { programs.push(OsString::from(p)) };
+        
+        /* Add some common programs */
+        if cfg!(windows) { programs.push(WINDOWS_PROGRAM_01.into()); }
+        else {
+            programs.push(LINUX_PROGRAM_01.into());
+            programs.push(LINUX_PROGRAM_02.into());
+            programs.push(LINUX_PROGRAM_03.into());
+            programs.push(LINUX_PROGRAM_04.into());
+            programs.push(LINUX_PROGRAM_05.into());
+            programs.push(LINUX_PROGRAM_06.into());
+            programs.push(LINUX_PROGRAM_07.into());
+            programs.push(LINUX_PROGRAM_08.into());
+            programs.push(LINUX_PROGRAM_09.into());
+            programs.push(LINUX_PROGRAM_10.into());
+            programs.push(LINUX_PROGRAM_11.into());
+        }
+        programs
     }
 }
 
