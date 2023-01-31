@@ -14,6 +14,7 @@ use std::{
     ops::Drop,
     error::Error,
     process::Command,
+    ffi::{OsStr, OsString},
     path::{PathBuf, Path},
     time::{SystemTime, UNIX_EPOCH},
     sync::atomic::{AtomicUsize, Ordering},
@@ -25,12 +26,12 @@ static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 /// Used to customize the editor before opening it, and to handle closing the program and collecting the output at the end.
 #[derive(Debug)]
-pub struct Editor {}
+pub struct Editor { args: Vec<OsString> }
 
 impl Editor {
     /// Creates a new Editor struct, ready for customizing or opening.
     pub fn new() -> Editor {
-        Editor {}
+        Editor { args: vec![] }
     }
 
     /// Opens the user's editor.
@@ -39,8 +40,14 @@ impl Editor {
         let path = Editor::create_buffer_file()?;
 
         /* Open the editor, store a handle to the child process */
-        Command::new("vim").arg(&path).status()?;
+        Command::new("vim").arg(&path).args(self.args).status()?;
         Ok(Reader { path })
+    }
+
+    /// Add arguments that you want to be used when the command is run. The first argument is always the file being used as the buffer.
+    pub fn arg<S: AsRef<OsStr>>(mut self, arg: S) -> Editor {
+        self.args.push(OsString::from(arg.as_ref()));
+        self
     }
 
     /// Creates a temporary file to use a buffer for the user's editor.

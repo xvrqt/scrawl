@@ -16,7 +16,7 @@
 use std::error::Error;
 
 /* Internal Modules */
-mod editor;
+pub mod editor;
 
 /* Convenience functions */
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
