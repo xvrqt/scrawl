@@ -25,16 +25,17 @@ trait ScrawlState {}
 
 /* Constants */
 const SCRAWL_TEMP_DIR: &str = "xvrqt_scrawl";
+const DEFAULT_EXT: &str = ".txt";
 static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 /// Used to customize the editor before opening it, and to handle closing the program and collecting the output at the end.
-#[derive(Debug, Clone, Copy)]
-pub struct Editor {}
+#[derive(Debug)]
+pub struct Editor { extension: String }
 
 impl Editor {
     /// Creates a new Editor struct, ready for customizing or opening.
     pub fn new() -> Editor {
-        Editor {}
+        Editor { extension: String::from(DEFAULT_EXT) }
     }
 
     /// Specify which editor should be opened instead of the user's default.
@@ -42,13 +43,20 @@ impl Editor {
         SpecificEditor {
             editor: OsString::from(editor.as_ref()),
             args: None,
+            extension: self.extension,
         }
     }
 
+    /// Specify which extension should be used on the temporary file (often used by text editors to infer syntax highlighting).
+    pub fn ext<S: AsRef<str>>(&mut self, ext: S) -> &mut Self {
+        self.extension = ext.as_ref().into();
+        self
+    }
+
     /// Opens the user's editor.
-    pub fn open(self) -> Result<Reader, Box<dyn Error>> {
+    pub fn open(mut self) -> Result<Reader, Box<dyn Error>> {
         /* Create a temporary file to use as a buffer */
-        let path = Editor::create_buffer_file()?;
+        let path = self.create_buffer_file()?;
 
         Editor::get_editor_programs().iter().find(|e| {
             Command::new(e).arg(&path).status().is_ok()
@@ -58,7 +66,7 @@ impl Editor {
     }
 
     /// Creates a temporary file to use a buffer for the user's editor.
-    fn create_buffer_file() -> Result<PathBuf, Box<dyn Error>> {
+    fn create_buffer_file(&mut self) -> Result<PathBuf, Box<dyn Error>> {
         /* Check create a Scawl directory in the user's tmp/ directory */
         let mut temp_dir = env::temp_dir();
         temp_dir.push(SCRAWL_TEMP_DIR);
@@ -74,9 +82,10 @@ impl Editor {
         let ts = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .map_or_else(|_| 0, |v| v.as_secs());
+        let ext = &self.extension;
 
         /* e.g. 1674864208_123_17.txt */
-        let temp_file = format!("{}_{}_{}.txt", ts, process_id, i);
+        let temp_file = format!("{}_{}_{}{}", ts, process_id, i, ext);
         /* Create the file path & file */
         temp_dir.push(&temp_file);
         fs::File::create(&temp_dir)?;
@@ -108,27 +117,67 @@ impl Editor {
 
 /// A variant of the Editor struct with a specific command and arguments for the text editor instead of the user's defaults. This struct is created when an editor is specified.
 #[derive(Debug)]
-pub struct SpecificEditor { editor: OsString, args: Option<Vec<OsString>> }
+pub struct SpecificEditor { 
+    editor: OsString, 
+    args: Option<Vec<OsString>>,
+    extension: String,
+}
 
 impl SpecificEditor {
     /// Add arguments that you want to be used when the command is run. The first argument is always the file being used as the buffer. Requires that a specific editor has been set.
-    pub fn arg<S: AsRef<OsStr>>(mut self, arg: S) -> Self {
+    pub fn arg<S: AsRef<OsStr>>(&mut self, arg: S) -> &mut Self {
         self.args.get_or_insert(vec![]).push(OsString::from(arg.as_ref()));
         self
     }
 
+    /// Specify which extension should be used on the temporary file (often used by text editors to infer syntax highlighting).
+    pub fn ext<S: AsRef<str>>(&mut self, ext: S) -> &mut Self {
+        self.extension = ext.as_ref().into();
+        self
+    }
+
     /// Opens the user's editor.
-    pub fn open(self) -> Result<Reader, Box<dyn Error>> {
+    pub fn open(&mut self) -> Result<Reader, Box<dyn Error>> {
         /* Create a temporary file to use as a buffer */
-        let path = Editor::create_buffer_file()?;
+        let path = self.create_buffer_file()?;
 
         /* Open the editor, store a handle to the child process */
-        Command::new(self.editor)
+        Command::new(&self.editor)
             .arg(&path)
-            .args(self.args.unwrap_or_default())
+            .args(self.args.as_ref().unwrap_or(&vec![]))
             .status()?;
 
         Ok(Reader { path })
+    }
+
+    /// Creates a temporary file to use a buffer for the user's editor.
+    fn create_buffer_file(&mut self) -> Result<PathBuf, Box<dyn Error>> {
+        /* Check create a Scawl directory in the user's tmp/ directory */
+        let mut temp_dir = env::temp_dir();
+        temp_dir.push(SCRAWL_TEMP_DIR);
+        /* Create it if it doesn't already exist */
+        match fs::metadata(&temp_dir) {
+            Err(_) => {  fs::create_dir(&temp_dir)? },
+            _ => (),
+        };
+
+        /* Generate unique path to a temporary file */
+        let process_id = std::process::id();
+        let i = TEMP_FILE_COUNT.fetch_add(1, Ordering::SeqCst);
+        let ts = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map_or_else(|_| 0, |v| v.as_secs());
+        let ext = &self.extension;
+
+        /* e.g. 1674864208_123_17.txt */
+        let temp_file = format!("{}_{}_{}{}", ts, process_id, i, ext);
+        /* Create the file path & file */
+        temp_dir.push(&temp_file);
+        fs::File::create(&temp_dir)?;
+
+        /* Return the path */
+        let path = PathBuf::from(temp_dir);
+        Ok(path)
     }
 }
 
