@@ -20,30 +20,29 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
+/* Trait to keep things DRY */
+trait ScrawlState {}
+
 /* Constants */
 const SCRAWL_TEMP_DIR: &str = "xvrqt_scrawl";
 static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 /// Used to customize the editor before opening it, and to handle closing the program and collecting the output at the end.
-#[derive(Debug)]
-pub struct Editor { editor: Option<OsString>, args: Vec<OsString> }
+#[derive(Debug, Clone, Copy)]
+pub struct Editor {}
 
 impl Editor {
     /// Creates a new Editor struct, ready for customizing or opening.
     pub fn new() -> Editor {
-        Editor { editor: None, args: vec![] }
-    }
-
-    /// Add arguments that you want to be used when the command is run. The first argument is always the file being used as the buffer.
-    pub fn arg<S: AsRef<OsStr>>(mut self, arg: S) -> Editor {
-        self.args.push(OsString::from(arg.as_ref()));
-        self
+        Editor {}
     }
 
     /// Specify which editor should be opened instead of the user's default.
-    pub fn editor<S: AsRef<OsStr>>(mut self, editor: S) -> Editor {
-        self.editor = Some(OsString::from(editor.as_ref()));
-        self
+    pub fn editor<S: AsRef<OsStr>>(self, editor: S) -> SpecificEditor {
+        SpecificEditor {
+            editor: OsString::from(editor.as_ref()),
+            args: None,
+        }
     }
 
     /// Opens the user's editor.
@@ -52,11 +51,10 @@ impl Editor {
         let path = Editor::create_buffer_file()?;
 
         /* Open the editor, store a handle to the child process */
-        let editor = self.editor.unwrap_or(OsString::fromw("vim"));
-        Command::new(editor).arg(&path).args(self.args).status()?;
+        let editor = OsString::from("vim");
+        Command::new(editor).arg(&path).status()?;
         Ok(Reader { path })
     }
-
 
     /// Creates a temporary file to use a buffer for the user's editor.
     fn create_buffer_file() -> Result<PathBuf, Box<dyn Error>> {
@@ -86,6 +84,33 @@ impl Editor {
         let path = PathBuf::from(temp_dir);
         Ok(path)
     }
+}
+
+/// A variant of the Editor struct with a specific command and arguments for the text editor instead of the user's defaults. This struct is created when an editor is specified.
+#[derive(Debug)]
+pub struct SpecificEditor { editor: OsString, args: Option<Vec<OsString>> }
+
+impl SpecificEditor {
+    /// Add arguments that you want to be used when the command is run. The first argument is always the file being used as the buffer. Requires that a specific editor has been set.
+    pub fn arg<S: AsRef<OsStr>>(mut self, arg: S) -> Self {
+        self.args.get_or_insert(vec![]).push(OsString::from(arg.as_ref()));
+        self
+    }
+
+    /// Opens the user's editor.
+    pub fn open(self) -> Result<Reader, Box<dyn Error>> {
+        /* Create a temporary file to use as a buffer */
+        let path = Editor::create_buffer_file()?;
+
+        /* Open the editor, store a handle to the child process */
+        Command::new(self.editor)
+            .arg(&path)
+            .args(self.args.unwrap_or_default())
+            .status()?;
+
+        Ok(Reader { path })
+    }
+
 }
 
 /// After the user closes their editor, it transforms into a Reader object where the input can be retrieved.
