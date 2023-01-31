@@ -2,18 +2,20 @@
 //! Error enum used by the Scrawl crate.
 use std::error::Error;
 use std::fmt;
+use std::path::PathBuf;
 
 /// Error enum for the Scrawl crate
 #[derive(Debug)]
 pub enum ScrawlError {
     /// Could not create a new temporary file to use as a buffer for Scrawl.
-    FailedToCreateTempfile,
+    FailedToCreateTempfile(PathBuf),
     /// Could not open the editor, or the editor quit with an error.
     FailedToOpenEditor(String),
     /// Could not read the file into a valid UTF-8 String.
     FailedToCaptureInput,
     /// Could not open the file specified in the scrawl::open function.
     FailedToCopyToTempFile(String),
+    EditorNotFound(std::ffi::OsString),
 }
 
 /* Display and Debug are required to satisfy the Error trait. Debug has been
@@ -22,9 +24,10 @@ pub enum ScrawlError {
 impl fmt::Display for ScrawlError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let error = match self {
-            ScrawlError::FailedToCreateTempfile => String::from(
+            ScrawlError::FailedToCreateTempfile(path) => format!(
                 "Could not \
-                 create a temporary file to serve as a buffer for the editor.",
+                 create a temporary file to serve as a buffer for the editor. \
+                 Path: \"{}\" not writeable.", path.to_string_lossy()
             ),
 
             ScrawlError::FailedToOpenEditor(editor) => format!(
@@ -42,6 +45,10 @@ impl fmt::Display for ScrawlError {
                 "Failed \
                  to copy the contents of the `{}` to the buffer for editing.",
                 filename
+            ),
+
+            ScrawlError::EditorNotFound(editor) => format!(
+                "Could not open the specified editor: {}", editor.to_string_lossy()
             ),
         };
 

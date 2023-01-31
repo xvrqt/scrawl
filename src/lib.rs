@@ -13,7 +13,7 @@
 )]
 
 /* Standard Library */
-use std::path::Path;
+// use std::path::Path;
 
 /* Internal Modules */
 pub mod error;
@@ -25,18 +25,20 @@ pub mod editor;
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
 ///
 /// # Example
-/// ```no_run
+/// ```
 /// # use scrawl::error::ScrawlError;
-/// # fn main() -> Result<(), ScrawlError> {
+/// # use std::error::Error;
+/// # fn main() -> Result<(), Box<dyn Error>> {
 ///     let output = scrawl::new()?;
-///     println!("{}", output);
+/// #   output.kill();
 /// #   Ok(())
 /// # }
 /// ```
-pub fn new() -> Result<String, ScrawlError> {
+pub fn new<'a>() -> Result<editor::Editor<'a, editor::EditingMode<'a>>, ScrawlError> {
     editor::new().open()
 }
 
+/*
 /// With opens a text buffer with the contents of the provided String in an editor. Returns a Result<String> with the edited contents.
 ///
 /// # Example
@@ -88,3 +90,4 @@ pub fn open<P: AsRef<Path>>(path: P) -> Result<String, ScrawlError> {
 pub fn edit<P: AsRef<Path>>(path: P) -> Result<(), ScrawlError> {
     editor::new().file(path.as_ref()).edit().open()
 }
+*/
