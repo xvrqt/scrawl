@@ -16,25 +16,23 @@
 use std::error::Error;
 
 /* Internal Modules */
-pub mod editor;
+mod editor;
 
 /* Convenience functions */
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
 ///
 /// # Example
 /// ```
-/// # use scrawl::error::ScrawlError;
 /// # use std::error::Error;
+/// # use std::io::Read;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 ///     /* Opens the user's editor */
-///     let editor = scrawl::new()?;
-///     /* Waits for the user to end the program and returns a Read-able object */
-///     let output = editor.collect()?; 
-///     for line in output { println!(line); }
+///     let input = scrawl::new()?;
+///     println!("{}", input.to_string()?);
 /// #   Ok(())
 /// # }
 /// ```
-pub fn new() -> Result<Editor, Box<dyn Error>> {
-    editor::new().open()
+pub fn new() -> Result<editor::Reader, Box<dyn Error>> {
+    editor::Editor::new().open()
 }
 
