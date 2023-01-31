@@ -13,12 +13,9 @@
 )]
 
 /* Standard Library */
-// use std::path::Path;
+use std::error::Error;
 
 /* Internal Modules */
-pub mod error;
-use error::ScrawlError;
-
 pub mod editor;
 
 /* Convenience functions */
@@ -29,65 +26,15 @@ pub mod editor;
 /// # use scrawl::error::ScrawlError;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<dyn Error>> {
-///     let output = scrawl::new()?;
-/// #   output.kill();
+///     /* Opens the user's editor */
+///     let editor = scrawl::new()?;
+///     /* Waits for the user to end the program and returns a Read-able object */
+///     let output = editor.collect()?; 
+///     for line in output { println!(line); }
 /// #   Ok(())
 /// # }
 /// ```
-pub fn new<'a>() -> Result<editor::Editor<'a, editor::EditingMode<'a>>, ScrawlError> {
+pub fn new() -> Result<Editor, Box<dyn Error>> {
     editor::new().open()
 }
 
-/*
-/// With opens a text buffer with the contents of the provided String in an editor. Returns a Result<String> with the edited contents.
-///
-/// # Example
-/// ```no_run
-/// # use scrawl::error::ScrawlError;
-/// # fn main() -> Result<(), ScrawlError> {
-///     let output = scrawl::with("Hello World!")?;
-///     println!("{}", output);
-/// #   Ok(())
-/// # }
-/// ```
-pub fn with(content: &str) -> Result<String, ScrawlError> {
-    editor::new().contents(content).open()
-}
-
-/// Open opens a text buffer in an editor with the contents of the file specified. This does **not** edit the contents of the file. Returns a Result<String> with the contents of the buffer.
-///
-/// # Example
-/// ```no_run
-/// # use scrawl::error::ScrawlError;
-/// # use std::path::Path;
-///
-/// # fn main() -> Result<(), ScrawlError> {
-///     let output = scrawl::open("hello.txt")?;
-///     println!("{}", output);
-///
-///     let path = Path::new("website.html");
-///     let output = scrawl::open(path)?;
-///     println!("{}", output);
-/// #   Ok(())
-/// # }
-/// ```
-pub fn open<P: AsRef<Path>>(path: P) -> Result<String, ScrawlError> {
-    editor::new().file(path.as_ref()).open()
-}
-
-/// Edit opens a text buffer in an editor with the contents of the file specified. This **does** edit the contents of the file. Returns a Result<String> with the contents of the buffer.
-///
-/// # Example
-/// ```no_run
-/// # use scrawl::error::ScrawlError;
-/// # use std::path::Path;
-///
-/// # fn main() -> Result<(), ScrawlError> {
-///     /* Directly edits the file, no output is returned */
-///     scrawl::edit("hello.txt")
-/// # }
-/// ```
-pub fn edit<P: AsRef<Path>>(path: P) -> Result<(), ScrawlError> {
-    editor::new().file(path.as_ref()).edit().open()
-}
-*/
