@@ -16,8 +16,7 @@
 use std::error::Error;
 
 /* Internal Modules */
-mod editor;
-pub use editor::Editor as Editor;
+pub mod editor;
 
 /* Convenience functions */
 /// New opens an empty text buffer in an editor and returns a Result<String> with the contents.
@@ -34,6 +33,6 @@ pub use editor::Editor as Editor;
 /// # }
 /// ```
 pub fn new() -> Result<editor::Reader, Box<dyn Error>> {
-    editor::Editor::new().open()
+    editor::new().open()
 }
 
