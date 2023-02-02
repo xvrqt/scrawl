@@ -23,7 +23,7 @@ pub mod editor;
 /// New opens an empty text buffer in an editor and returns a Readable struct on success.
 ///
 /// # Example
-/// ```no_run()
+/// ```no_run
 /// # use std::error::Error;
 /// # use std::io::Read;
 /// # fn main() -> Result<(), Box<dyn Error>> {
@@ -64,7 +64,7 @@ pub fn with<U: AsRef<[u8]>>(input: &U) -> Result<editor::Reader, Box<dyn Error>>
 /// # fn main() -> Result<(), Box<dyn Error>> {
 ///     /* Opens the user's editor, buffer pre-filled with custom content */
 ///     let path = Path::new("foo.txt"); 
-///     let input = scrawl::from_file(path)?;
+///     let input = scrawl::from_file(&path)?;
 ///     println!("{}", input.to_string()?);
 /// #   Ok(())
 /// # }
@@ -84,7 +84,7 @@ pub fn from_file<P: AsRef<Path>>(path: &P) -> Result<editor::Reader, Box<dyn Err
 /// # fn main() -> Result<(), Box<dyn Error>> {
 ///     /* Opens the user's editor, buffer pre-filled with custom content */
 ///     let path = Path::new("bar.rs"); 
-///     let input = scrawl::edit_file(path)?;
+///     let input = scrawl::edit_file(&path)?;
 ///     println!("{}", input.to_string()?);
 /// #   Ok(())
 /// # }
