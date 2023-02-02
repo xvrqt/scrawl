@@ -18,6 +18,7 @@ use std::path::Path;
 
 /* Internal Modules */
 pub mod editor;
+pub use editor::Contents as Contents;
 
 /* Convenience functions */
 /// New opens an empty text buffer in an editor and returns a Readable struct on success.
@@ -34,7 +35,7 @@ pub mod editor;
 /// # }
 /// ```
 pub fn new() -> Result<editor::Reader, Box<dyn Error>> {
-    editor::new().open(editor::Contents::Empty)
+    editor::new().open(Contents::Empty)
 }
 
 /// With opens a text buffer with the provided contents in an editor. Returns a Readble struct on success.
@@ -51,7 +52,7 @@ pub fn new() -> Result<editor::Reader, Box<dyn Error>> {
 /// # }
 /// ```
 pub fn with<U: AsRef<[u8]>>(input: &U) -> Result<editor::Reader, Box<dyn Error>> {
-    editor::new().open(editor::Contents::FromString(input))
+    editor::new().open(Contents::FromString(input))
 }
 
 /// FromFile opens a text buffer with the content of the provided file in an editor. Returns a Readble struct on success.
@@ -60,17 +61,15 @@ pub fn with<U: AsRef<[u8]>>(input: &U) -> Result<editor::Reader, Box<dyn Error>>
 /// ```no_run
 /// # use std::error::Error;
 /// # use std::io::Read;
-/// # use std::path::Path;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 ///     /* Opens the user's editor, buffer pre-filled with custom content */
-///     let path = Path::new("foo.txt"); 
-///     let input = scrawl::from_file(&path)?;
+///     let input = scrawl::from_file(&"foo.txt")?;
 ///     println!("{}", input.to_string()?);
 /// #   Ok(())
 /// # }
 /// ```
 pub fn from_file<P: AsRef<Path>>(path: &P) -> Result<editor::Reader, Box<dyn Error>> {
-    editor::new().open(editor::Contents::FromFile(path))
+    editor::new().open(Contents::FromFile(path))
 }
 
 
@@ -80,11 +79,9 @@ pub fn from_file<P: AsRef<Path>>(path: &P) -> Result<editor::Reader, Box<dyn Err
 /// ```no_run
 /// # use std::error::Error;
 /// # use std::io::Read;
-/// # use std::path::Path;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 ///     /* Opens the user's editor, buffer pre-filled with custom content */
-///     let path = Path::new("bar.rs"); 
-///     let input = scrawl::edit_file(&path)?;
+///     let input = scrawl::edit_file(&"bar.rs")?;
 ///     println!("{}", input.to_string()?);
 /// #   Ok(())
 /// # }
