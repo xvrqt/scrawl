@@ -1,14 +1,14 @@
 [package]
 name = "scrawl"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["Amy <git@xvrqt.com>"]
-edition = "2018"
+edition = "2021"
 
-repository = "https://git.xvrqt.com/amy/scrawl.git"
-homepage = "https://git.xvrqt.com/amy/scrawl"
+repository = "https://git.xvrqt.com/xvrqt/scrawl.git"
+homepage = "https://git.xvrqt.com/xvrqt/scrawl"
 license = "BSD-3-Clause"
 readme = "README.md"
-description = "Opens a user's preferred text editor so they can edit data inline and saves the result to a String. Useful for interactive CLI applications."
+description = "Opens a user's preferred text editor so they can edit data inline and returns a Read-able struct for interactive CLI applications."
 keywords = ["editor", "cli", "text", "xvrqt"]
 categories = ["config", "text-editors", "command-line-interface"]
 
