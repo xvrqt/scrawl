@@ -50,7 +50,7 @@ pub trait EditorState {}
 impl<S: EditorState> Editor<S> {
 
     /// Creates a temporary file to use a buffer for the user's editor.
-    fn create_buffer_file(&mut self) -> Result<PathBuf, Box<dyn Error>> {
+    fn create_buffer_file(&mut self, contents: Contents) -> Result<PathBuf, Box<dyn Error>> {
         /* Check create a Scawl directory in the user's tmp/ directory */
         let mut temp_dir = env::temp_dir();
         temp_dir.push(SCRAWL_TEMP_DIR);
@@ -73,10 +73,17 @@ impl<S: EditorState> Editor<S> {
         /* Create the file path & file */
         temp_dir.push(&temp_file);
         fs::File::create(&temp_dir)?;
+        let temp_file_path = PathBuf::from(temp_dir);
+
+        /* Check if we need to seed the contents of this temporary file */
+        match contents {
+            Contents::FromFile(source) => fs::copy(source, &temp_file_path).map(|_| ())?,
+            Contents::FromString(s) => fs::write(&temp_file_path, s)?,
+            _ => (),
+        }
 
         /* Return the path */
-        let path = PathBuf::from(temp_dir);
-        Ok(path)
+        Ok(temp_file_path)
     }
 
     /// Returns the name of the editor to use if user specified, or a list of editors to try if Default is selected.
@@ -127,9 +134,9 @@ impl Editor<DefaultState> {
     }
 
     /// Opens the user's editor.
-    pub fn open(mut self) -> Result<Reader, Box<dyn Error>> {
+    pub fn open(&mut self, contents: Contents) -> Result<Reader, Box<dyn Error>> {
         /* Create a temporary file to use as a buffer */
-        let path = self.create_buffer_file()?;
+        let path = self.create_buffer_file(contents)?;
 
         self.get_editor_programs().iter().find(|e| {
             Command::new(e).arg(&path).status().is_ok()
@@ -137,8 +144,16 @@ impl Editor<DefaultState> {
 
         Ok(Reader { path })
     }
-}
 
+    /// Opens a file for editing in the User's editor.
+    pub fn edit<P: AsRef<Path>>(&mut self, path: P) -> Result<Reader, Box<dyn Error>> {
+        self.get_editor_programs().iter().find(|e| {
+            Command::new(e).arg(path.as_ref()).status().is_ok()
+        }).ok_or("Could not find a text editing program")?;
+
+        Ok(Reader { path:  path.as_ref().into() })
+    }
+}
 
 /// A variant of the Editor struct with a specific command and arguments for the text editor instead of the user's defaults. This struct is created when an editor is specified.
 #[derive(Debug)]
@@ -162,9 +177,9 @@ impl Editor<SpecificEditorState> {
     }
 
     /// Opens the user's editor.
-    pub fn open(&mut self) -> Result<Reader, Box<dyn Error>> {
+    pub fn open(&mut self, contents: Contents) -> Result<Reader, Box<dyn Error>> {
         /* Create a temporary file to use as a buffer */
-        let path = self.create_buffer_file()?;
+        let path = self.create_buffer_file(contents)?;
 
         /* Open the editor, store a handle to the child process */
         Command::new(&self.state.editor)
@@ -174,6 +189,29 @@ impl Editor<SpecificEditorState> {
 
         Ok(Reader { path })
     }
+
+    /// Opens a file for editing in the User's editor.
+    pub fn edit<P: AsRef<Path>>(&mut self, path: P) -> Result<Reader, Box<dyn Error>> {
+        /* Open the editor, store a handle to the child process */
+        Command::new(&self.state.editor)
+            .arg(path.as_ref())
+            .args(self.state.args.as_ref().unwrap_or(&vec![]))
+            .status()?;
+
+        Ok(Reader { path:  path.as_ref().into() })
+    }
+}
+
+/* User chooses a variant with which to seed the editor contents */
+/// Enum for what to seed the editor's buffer with.
+#[allow(missing_debug_implementations)]
+pub enum Contents<'a> {
+    /// Editor opens an empty file.
+    Empty,
+    /// Editor opens a file with the contents of a String.
+    FromString(&'a dyn AsRef<[u8]>),
+    /// Editor opens a file with the copied contents of a file at specified path.
+    FromFile(&'a dyn AsRef<Path>),
 }
 
 /// After the user closes their editor, it transforms into a Reader object where the input can be retrieved.
@@ -207,7 +245,13 @@ impl Reader {
 /* Delete our temporary file to clean up */
 impl Drop for Reader {
     fn drop(&mut self) -> () {
-        let _ = fs::remove_file(&self.path);
+        let mut temp_dir_path = env::temp_dir();
+        temp_dir_path.push(SCRAWL_TEMP_DIR);
+
+        /* Only clean up files we created */
+        if self.path.starts_with(temp_dir_path) {
+            let _ = fs::remove_file(&self.path);
+        }
     }
 }
 
