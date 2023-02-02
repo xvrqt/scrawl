@@ -55,10 +55,7 @@ impl<S: EditorState> Editor<S> {
         let mut temp_dir = env::temp_dir();
         temp_dir.push(SCRAWL_TEMP_DIR);
         /* Create it if it doesn't already exist */
-        match fs::metadata(&temp_dir) {
-            Err(_) => {  fs::create_dir(&temp_dir)? },
-            _ => (),
-        };
+        if fs::metadata(&temp_dir).is_err() { fs::create_dir(&temp_dir)? };
 
         /* Generate unique path to a temporary file */
         let i = TEMP_FILE_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -68,12 +65,12 @@ impl<S: EditorState> Editor<S> {
         let ext = &self.extension;
         let process_id = std::process::id();
         /* e.g. 1674864208_123_17.txt */
-        let temp_file = format!("{}_{}_{}{}", ts, process_id, i, ext);
+        let temp_file = format!("{ts}_{process_id}_{i}{ext}");
 
         /* Create the file path & file */
         temp_dir.push(&temp_file);
-        fs::File::create(&temp_dir)?;
-        let temp_file_path = PathBuf::from(temp_dir);
+        let temp_file_path = temp_dir;
+        fs::File::create(&temp_file_path)?;
 
         /* Check if we need to seed the contents of this temporary file */
         match contents {
@@ -244,7 +241,7 @@ impl Reader {
 
 /* Delete our temporary file to clean up */
 impl Drop for Reader {
-    fn drop(&mut self) -> () {
+    fn drop(&mut self) {
         let mut temp_dir_path = env::temp_dir();
         temp_dir_path.push(SCRAWL_TEMP_DIR);
 
