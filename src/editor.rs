@@ -1,23 +1,29 @@
 //! # Editor
 //! Struct used to configure the editor before opening and using it.
-#![deny(missing_docs,
-        missing_debug_implementations, missing_copy_implementations,
-        trivial_casts, trivial_numeric_casts,
-        unstable_features, unsafe_code,
-        unused_import_braces, unused_qualifications)]
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    missing_copy_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unstable_features,
+    unsafe_code,
+    unused_import_braces,
+    unused_qualifications
+)]
 
 /* Standard Library */
 use std::{
-    fs,
     env,
+    error::Error,
+    ffi::{OsStr, OsString},
+    fs,
     io::BufReader,
     ops::Drop,
-    error::Error,
+    path::{Path, PathBuf},
     process::Command,
-    ffi::{OsStr, OsString},
-    path::{PathBuf, Path},
-    time::{SystemTime, UNIX_EPOCH},
     sync::atomic::{AtomicUsize, Ordering},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 /* Trait to keep things DRY */
@@ -31,14 +37,17 @@ static TEMP_FILE_COUNT: AtomicUsize = AtomicUsize::new(0);
 /* The struct used to construct an Editor */
 #[derive(Debug)]
 /// This is the struct that allows the caller to customize which editor is called, what it is seeded with, and more.
-pub struct Editor<S: EditorState> { extension: String, state: S }
+pub struct Editor<S: EditorState> {
+    extension: String,
+    state: S,
+}
 
 /* Function that returns the default Editor state */
 /// Creates a new Editor struct, ready for customizing or opening.
 pub fn new() -> Editor<DefaultState> {
     Editor {
         extension: String::from(DEFAULT_EXT),
-        state: DefaultState {}
+        state: DefaultState {},
     }
 }
 
@@ -48,20 +57,21 @@ pub trait EditorState {}
 
 /* These function are available to all states of the Editor. Utility functions */
 impl<S: EditorState> Editor<S> {
-
     /// Creates a temporary file to use a buffer for the user's editor.
     fn create_buffer_file(&mut self, contents: Contents) -> Result<PathBuf, Box<dyn Error>> {
         /* Check create a Scawl directory in the user's tmp/ directory */
         let mut temp_dir = env::temp_dir();
         temp_dir.push(SCRAWL_TEMP_DIR);
         /* Create it if it doesn't already exist */
-        if fs::metadata(&temp_dir).is_err() { fs::create_dir(&temp_dir)? };
+        if fs::metadata(&temp_dir).is_err() {
+            fs::create_dir(&temp_dir)?
+        };
 
         /* Generate unique path to a temporary file */
         let i = TEMP_FILE_COUNT.fetch_add(1, Ordering::SeqCst);
         let ts = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map_or_else(|_| 0, |v| v.as_secs());
+            .duration_since(UNIX_EPOCH)
+            .map_or_else(|_| 0, |v| v.as_secs());
         let ext = &self.extension;
         let process_id = std::process::id();
         /* e.g. 1674864208_123_17.txt */
@@ -87,16 +97,30 @@ impl<S: EditorState> Editor<S> {
     fn get_editor_programs(&self) -> Vec<OsString> {
         let mut programs = Vec::with_capacity(3);
         /* Check the usual ENV variables for programs */
-        if let Ok(p) = env::var("VISUAL") { programs.push(OsString::from(p)) };
-        if let Ok(p) = env::var("EDITOR") { programs.push(OsString::from(p)) };
-        
+        if let Ok(p) = env::var("VISUAL") {
+            programs.push(OsString::from(p))
+        };
+        if let Ok(p) = env::var("EDITOR") {
+            programs.push(OsString::from(p))
+        };
+
         /* Add some common programs */
-        if cfg!(windows) { programs.push("notepad.exe".into()); }
-        else {
-            let p: Vec<OsString> = vec!["vim".into(), "neovim".into(),
-                "nvim".into(), "nano".into(), "emacs".into(), "mcedit".into(),
-                "tilde".into(), "micro".into(), "helix".into(), "ne".into(),
-                "vi".into()];
+        if cfg!(windows) {
+            programs.push("notepad.exe".into());
+        } else {
+            let p: Vec<OsString> = vec![
+                "vim".into(),
+                "neovim".into(),
+                "nvim".into(),
+                "nano".into(),
+                "emacs".into(),
+                "mcedit".into(),
+                "tilde".into(),
+                "micro".into(),
+                "helix".into(),
+                "ne".into(),
+                "vi".into(),
+            ];
             programs.extend_from_slice(&p);
         }
         programs
@@ -115,7 +139,7 @@ impl Editor<DefaultState> {
         self.extension = ext.as_ref().into();
         self
     }
-    
+
     /* Returns a different struct, consumes the Editor instead of returning a
        reference; enforces a certain builder grammar.
     */
@@ -126,7 +150,7 @@ impl Editor<DefaultState> {
             state: SpecificEditorState {
                 editor: OsString::from(editor.as_ref()),
                 args: None,
-            }
+            },
         }
     }
 
@@ -135,35 +159,42 @@ impl Editor<DefaultState> {
         /* Create a temporary file to use as a buffer */
         let path = self.create_buffer_file(contents)?;
 
-        self.get_editor_programs().iter().find(|e| {
-            Command::new(e).arg(&path).status().is_ok()
-        }).ok_or("Could not find a text editing program")?;
+        self.get_editor_programs()
+            .iter()
+            .find(|e| Command::new(e).arg(&path).status().is_ok())
+            .ok_or("Could not find a text editing program")?;
 
         Ok(Reader { path })
     }
 
     /// Opens a file for editing in the User's editor.
     pub fn edit<P: AsRef<Path>>(&mut self, path: P) -> Result<Reader, Box<dyn Error>> {
-        self.get_editor_programs().iter().find(|e| {
-            Command::new(e).arg(path.as_ref()).status().is_ok()
-        }).ok_or("Could not find a text editing program")?;
+        self.get_editor_programs()
+            .iter()
+            .find(|e| Command::new(e).arg(path.as_ref()).status().is_ok())
+            .ok_or("Could not find a text editing program")?;
 
-        Ok(Reader { path:  path.as_ref().into() })
+        Ok(Reader {
+            path: path.as_ref().into(),
+        })
     }
 }
 
 /// A variant of the Editor struct with a specific command and arguments for the text editor instead of the user's defaults. This struct is created when an editor is specified.
 #[derive(Debug)]
-pub struct SpecificEditorState { 
+pub struct SpecificEditorState {
     args: Option<Vec<OsString>>,
-    editor: OsString, 
+    editor: OsString,
 }
 impl EditorState for SpecificEditorState {}
 
 impl Editor<SpecificEditorState> {
     /// Add arguments that you want to be used when the command is run. The first argument is always the file being used as the buffer. Requires that a specific editor has been set.
     pub fn arg<S: AsRef<OsStr>>(&mut self, arg: S) -> &mut Self {
-        self.state.args.get_or_insert(vec![]).push(OsString::from(arg.as_ref()));
+        self.state
+            .args
+            .get_or_insert(vec![])
+            .push(OsString::from(arg.as_ref()));
         self
     }
 
@@ -195,7 +226,9 @@ impl Editor<SpecificEditorState> {
             .args(self.state.args.as_ref().unwrap_or(&vec![]))
             .status()?;
 
-        Ok(Reader { path:  path.as_ref().into() })
+        Ok(Reader {
+            path: path.as_ref().into(),
+        })
     }
 }
 
@@ -251,4 +284,3 @@ impl Drop for Reader {
         }
     }
 }
-

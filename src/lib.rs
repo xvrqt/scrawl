@@ -18,7 +18,7 @@ use std::path::Path;
 
 /* Internal Modules */
 pub mod editor;
-pub use editor::Contents as Contents;
+pub use editor::Contents;
 
 /* Convenience functions */
 /// New opens an empty text buffer in an editor and returns a Readable struct on success.
@@ -72,7 +72,6 @@ pub fn from_file<P: AsRef<Path>>(path: &P) -> Result<editor::Reader, Box<dyn Err
     editor::new().open(Contents::FromFile(path))
 }
 
-
 /// EditFile opens a text buffer with the content of the provided file, allowing direct editing in an editor. Returns a Readble struct on success.
 ///
 /// # Example
@@ -89,4 +88,3 @@ pub fn from_file<P: AsRef<Path>>(path: &P) -> Result<editor::Reader, Box<dyn Err
 pub fn edit_file<P: AsRef<Path>>(path: &P) -> Result<editor::Reader, Box<dyn Error>> {
     editor::new().edit(path)
 }
-
