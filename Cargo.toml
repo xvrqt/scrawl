@@ -4,8 +4,8 @@ version = "2.0.0"
 authors = ["Amy <git@xvrqt.com>"]
 edition = "2021"
 
-repository = "https://git.xvrqt.com/xvrqt/scrawl.git"
-homepage = "https://git.xvrqt.com/xvrqt/scrawl"
+repository = "https://github.com/xvrqt/scrawl"
+homepage = "https://github.com/xvrqt/scrawl"
 license = "BSD-3-Clause"
 readme = "README.md"
 description = "Opens a user's preferred text editor so they can edit data inline and returns a Read-able struct for interactive CLI applications."
